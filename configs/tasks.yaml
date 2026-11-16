@@ -74,12 +74,12 @@ tasks:
               browsing: "Objective information about a brand or product"
               experience: "Other people's experience, reviews, rankings, comparisons"
               confirmation: "Checks right before buying: price, where to buy, discounts"
-              own_and_service: "After purchase: how-to, repair, customer service, repurchase, accessories"
+              own_and_service: "After purchase: how-to, repair, customer service, repurchase, accessories and add-ons"
               other: "Unrelated to the journey: meaning, stock, hiring, people"
           nonbrand:
             criteria:
               initial_exploration: "Exploring a category before choosing a brand"
-              own_and_service: "After purchase: how-to, repair, customer service, repurchase, accessories"
+              own_and_service: "After purchase: how-to, repair, customer service, repurchase, accessories and add-ons"
               other: "Unrelated to the journey: meaning, stock, hiring, people"
       s5_other:
         type: noul
@@ -90,10 +90,10 @@ tasks:
         variants:
           brand:
             criteria: ["Browsing: objective information", "Experience: reviews and comparisons",
-                       "Confirmation: price and where to buy", "Own & Service: after purchase, incl. accessories"]
+                       "Confirmation: price and where to buy", "Own & Service: after purchase, incl. accessories and add-ons"]
             levels: [browsing, experience, confirmation, own_and_service]
           nonbrand:
-            criteria: ["Initial exploration: category level", "Own & Service: after purchase, incl. accessories"]
+            criteria: ["Initial exploration: category level", "Own & Service: after purchase, incl. accessories and add-ons"]
             levels: [initial_exploration, own_and_service]
     views:
       choice: {kind: single, question: s5_choice}
