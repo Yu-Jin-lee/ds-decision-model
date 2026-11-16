@@ -1,0 +1,147 @@
+# Tasks, their final labels, and the question formats (levels) compared on the
+# question-type axis. Instructions and option descriptions are placeholders:
+# TODO replace them with the exact wording production will send.
+#
+# A view turns model answers into a distribution over the task's final labels.
+#   single: one question; noul maps true/false to labels, score maps levels to labels
+#   gate:   a noul gate decides one label; otherwise the inner question decides
+# A level is the list of views trained together in one record.
+
+tasks:
+  s4:
+    name: S4 brand / non-brand
+    state_fields: [keyword, target, serp]
+    label_field: label
+    final_labels: [brand, nonbrand]
+    questions:
+      s4_noul:
+        type: noul
+        instructions: "Is the target a specific company, brand, product or service name?"
+        true_label: brand
+        false_label: nonbrand
+      s4_choice:
+        type: choice
+        instructions: "Is the target a brand or a non-brand term?"
+        criteria:
+          brand: "A specific company, brand, product or service name"
+          nonbrand: "A generic category or common noun"
+      s4_score:
+        type: score
+        instructions: "How strongly is the target a specific brand name?"
+        criteria: ["Generic category (non-brand)", "Specific brand name"]
+        levels: [nonbrand, brand]
+    views:
+      noul: {kind: single, question: s4_noul}
+      choice: {kind: single, question: s4_choice}
+      score: {kind: single, question: s4_score}
+    levels:
+      noul: [noul]
+      choice: [choice]
+      both: [noul, choice]
+      score: [score]          # optional level
+
+  s5:
+    name: S5 CDJ stage
+    # Model input, built from the s5_master row (cdj_dataset/s5_master).
+    # TODO match the function production inference uses to build the state.
+    state:
+      keyword: keyword
+      target: target
+      intent: intent
+      site: site
+      industry: industry
+      category: category
+      serp: {from: serp, format: serp_compact}
+    label_field: stage        # final label (three_agree / human / bulk / ...)
+    variant_field: kind       # brand / generic, already corrected to the final label
+    variant_map: {brand: brand, generic: nonbrand}
+    variant_in_state: brand   # adds {"brand": true|false} to the state (the S4 result)
+    meta_fields: {type: meta.type, hard_type: meta.hard_type, stage_source: stage_source, kind_changed: meta.kind_changed}
+    final_labels: [initial_exploration, browsing, experience, confirmation, own_and_service, other]
+    stage_order:              # for the stage-error metric (Other is off the scale)
+      brand: [browsing, experience, confirmation, own_and_service]
+      nonbrand: [initial_exploration, own_and_service]
+    variant_labels:           # labels each variant may take; prepare_data rejects others
+      brand: [browsing, experience, confirmation, own_and_service, other]
+      nonbrand: [initial_exploration, own_and_service, other]
+    questions:
+      s5_choice:
+        type: choice
+        instructions: "Which customer decision journey stage does the keyword belong to?"
+        variants:
+          brand:
+            criteria:
+              browsing: "Objective information about a brand or product"
+              experience: "Other people's experience, reviews, rankings, comparisons"
+              confirmation: "Checks right before buying: price, where to buy, discounts"
+              own_and_service: "After use: how-to, repair, customer service, repurchase"
+              other: "Unrelated to the journey: meaning, stock, hiring, people"
+          nonbrand:
+            criteria:
+              initial_exploration: "Exploring a category before choosing a brand"
+              own_and_service: "After use: how-to, repair, customer service, repurchase"
+              other: "Unrelated to the journey: meaning, stock, hiring, people"
+      s5_other:
+        type: noul
+        instructions: "Is the keyword unrelated to the purchase journey (meaning, stock, hiring, people)?"
+      s5_stage:
+        type: score
+        instructions: "How far along the purchase journey is the keyword?"
+        variants:
+          brand:
+            criteria: ["Browsing: objective information", "Experience: reviews and comparisons",
+                       "Confirmation: price and where to buy", "Own & Service: after use"]
+            levels: [browsing, experience, confirmation, own_and_service]
+          nonbrand:
+            criteria: ["Initial exploration: category level", "Own & Service: after use"]
+            levels: [initial_exploration, own_and_service]
+    views:
+      choice: {kind: single, question: s5_choice}
+      split: {kind: gate, gate: s5_other, gate_label: other, inner: s5_stage}
+    levels:
+      choice: [choice]
+      split: [split]
+      both: [choice, split]
+
+  s2:
+    name: S2 Span related / unrelated type
+    state_fields: [industry, category, seed, keyword, serp]
+    label_field: type_num
+    label_map: {"0": related, "1": other_category, "2": same_name_other_category, "3": hiring,
+                "4": stock_finance, "5": news_pr, "6": person, "7": other_unrelated}
+    final_labels: [related, other_category, same_name_other_category, hiring,
+                   stock_finance, news_pr, person, other_unrelated]
+    questions:
+      s2_choice:
+        type: choice
+        instructions: "Is the keyword related to the industry and category? If not, which type of unrelated keyword is it?"
+        criteria:
+          related: "Related to the category's consumer journey"
+          other_category: "About a different category"
+          same_name_other_category: "Same name, but a different category"
+          hiring: "Recruiting or jobs"
+          stock_finance: "Stocks or finance"
+          news_pr: "News or press releases"
+          person: "A specific person"
+          other_unrelated: "Other unrelated"
+      s2_related:
+        type: noul
+        instructions: "Is the keyword related to the industry and category?"
+      s2_type:
+        type: choice
+        instructions: "Which type of unrelated keyword is it?"
+        criteria:
+          other_category: "About a different category"
+          same_name_other_category: "Same name, but a different category"
+          hiring: "Recruiting or jobs"
+          stock_finance: "Stocks or finance"
+          news_pr: "News or press releases"
+          person: "A specific person"
+          other_unrelated: "Other unrelated"
+    views:
+      choice: {kind: single, question: s2_choice}
+      split: {kind: gate, gate: s2_related, gate_label: related, inner: s2_type}
+    levels:
+      choice: [choice]
+      split: [split]
+      both: [choice, split]

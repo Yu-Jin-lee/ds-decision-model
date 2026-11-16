@@ -1,0 +1,72 @@
+# Experiment groups from the design document (section 4).
+# `levels` maps task -> question-format level (see tasks.yaml).
+# `selected` means "the level chosen in stage 1", read from selected_levels below.
+# A group with a `sweep` key expands into one group per listed level.
+
+seeds: [0, 1, 2]
+langs: [ko, ja, en]
+
+# Fill after stage 1 (design doc 6.2). Stage-2 groups fail until these are set.
+selected_levels:
+  s2: null
+  s4: null
+  s5: null
+
+groups:
+  # Stage 0: baseline, no training. Evaluated with every level of every task.
+  B0:
+    stage: 0
+    train: false
+    tasks: [s2, s4, s5]
+    sweep: all_levels
+
+  # Stage 1: question-format selection, one task at a time.
+  S-s2:
+    stage: 1
+    tasks: [s2]
+    sweep: [choice, split, both]
+  S-s4:
+    stage: 1
+    tasks: [s4]
+    sweep: [noul, choice, both]
+  S-s4-score:
+    stage: 1
+    optional: true
+    tasks: [s4]
+    levels: {s4: score}
+  S-s5:
+    stage: 1
+    tasks: [s5]
+    sweep: [choice, split, both]
+
+  # Stage 2: task and language axes with the selected formats.
+  J+R-all:
+    stage: 2
+    tasks: [s2, s4, s5]
+    levels: selected
+    replay: 2000
+  J+R-ko:
+    stage: 2
+    tasks: [s2, s4, s5]
+    train_langs: [ko]
+    levels: selected
+    replay: 2000
+  J+R-ja:
+    stage: 2
+    tasks: [s2, s4, s5]
+    train_langs: [ja]
+    levels: selected
+    replay: 2000
+  J+R-en:
+    stage: 2
+    tasks: [s2, s4, s5]
+    train_langs: [en]
+    levels: selected
+    replay: 2000
+  J:
+    stage: 2
+    optional: true
+    seeds: [0]
+    tasks: [s2, s4, s5]
+    levels: selected
+    replay: 0

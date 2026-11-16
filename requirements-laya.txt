@@ -1,0 +1,3 @@
+# Laya runtime and training loop (laya.train). The GitHub main branch was 0.4.34
+# when this backend was written; pin to the version that passes the smoke run.
+laya>=0.4

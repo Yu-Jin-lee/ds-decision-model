@@ -1,0 +1,19 @@
+[project]
+name = "decision-model"
+version = "0.1.0"
+description = "Fine-tuning and evaluation of decision models (Kev, Clef-Flash) for S2, S4, S5"
+requires-python = ">=3.10"
+dependencies = ["pyyaml>=6", "numpy>=1.26"]
+
+[project.optional-dependencies]
+clef = ["torch>=2.11", "transformers==5.10.2", "peft", "safetensors", "huggingface_hub"]
+laya = ["laya>=0.4"]
+launch = ["sagemaker>=2.200,<3", "boto3"]  # v3 replaced Estimator
+dev = ["pytest"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
