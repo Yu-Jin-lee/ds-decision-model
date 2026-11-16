@@ -1,0 +1,26 @@
+# Kev-4B (jaredpalmer/kev). Same recipe as kev-9b; values from the experiment
+# design document's fixed-settings table, which uses Kev-4B v1.0 as its example.
+name: kev-4b
+backend: kev
+checkpoint: jaredpalmer/kev-4b@v1.0   # model card: v1.0 = main at 139fdd94
+base: Qwen/Qwen3.5-4B-Base
+base_revision: 1001bb4d               # from the kev-4b model card
+multilingual: true
+
+train:
+  lora_rank: 16
+  head_dim: 256              # confirm it matches the checkpoint's head in the smoke run
+  lora_targets: all
+  lr: 2.0e-5
+  epochs: 1
+  batch: 2
+  accum: 4
+  checkpointing: 1
+  weights_dtype: fp32        # bf16 autocast over fp32 weights, as the checkpoint was trained
+  dtype: bf16
+  p_none_pair: 0.25
+  extra_args: ["--option_isolation", "0", "--special_embeddings", "0"]
+
+kev_repo: https://github.com/jaredpalmer/kev.git
+kev_ref: kev-1.0
+instance: ml.g6e.xlarge      # L40S 48 GB; the card lists ~14 GB resident for serving
