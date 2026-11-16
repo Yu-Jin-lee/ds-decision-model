@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import time
 from pathlib import Path
@@ -37,10 +38,29 @@ def _base_group(group: str, groups_config: dict[str, Any]) -> str:
 
 
 def _git_commit() -> str | None:
+    """Commit of the code that ran. On SageMaker the launcher records it at submit
+    time (DECISION_MODEL_GIT_COMMIT), because git refuses to read the copied repo."""
+    if os.environ.get("DECISION_MODEL_GIT_COMMIT"):
+        return os.environ["DECISION_MODEL_GIT_COMMIT"]
     try:
-        return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, text=True).strip()
+        return subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, text=True, stderr=subprocess.DEVNULL
+        ).strip()
     except (OSError, subprocess.CalledProcessError):
         return None
+
+
+def _git_dirty() -> bool | None:
+    """True if the code had uncommitted changes when it was run or submitted."""
+    if "DECISION_MODEL_GIT_DIRTY" in os.environ:
+        return os.environ["DECISION_MODEL_GIT_DIRTY"] == "1"
+    try:
+        status = subprocess.check_output(
+            ["git", "status", "--porcelain"], cwd=REPO_ROOT, text=True, stderr=subprocess.DEVNULL
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return bool(status.strip())
 
 
 def execute(
@@ -80,6 +100,7 @@ def execute(
         "temperature": temperature,
         "checkpoint": str(checkpoint) if checkpoint else model_config["checkpoint"],
         "git_commit": _git_commit(),
+        "git_dirty": _git_dirty(),
         "data_manifest": data_manifest(data_root),
     }
     partitions = ["development"] + (["test"] if final else [])

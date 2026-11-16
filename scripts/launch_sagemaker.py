@@ -34,6 +34,18 @@ def job_name(model: str, group: str, seed: int) -> str:
     return slug[:50]
 
 
+def git_state() -> tuple[str, str]:
+    """Commit and dirty flag of the local checkout, recorded in each run's summary."""
+    import subprocess
+
+    try:
+        commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=REPO, text=True).strip()
+        dirty = subprocess.check_output(["git", "status", "--porcelain"], cwd=REPO, text=True).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return "unknown", "1"
+    return commit, "1" if dirty else "0"
+
+
 def already_done(s3_output: str, run_id: str) -> bool:
     import boto3
 
@@ -90,6 +102,10 @@ def main() -> None:
             sys.exit(f"--tag must be key=value, got {item!r}")
         tags[key] = value
     tag_list = [{"Key": k, "Value": v} for k, v in tags.items()]
+    commit, dirty = git_state()
+    if dirty == "1":
+        print(f"warning: uncommitted changes; runs will record commit {commit[:7]} with git_dirty=true")
+    output = args.output.rstrip("/")
 
     for run in runs:
         if not args.dry_run and already_done(args.output, run.run_id):
@@ -97,7 +113,7 @@ def main() -> None:
             continue
         name = job_name(run.model, run.group, run.seed)
         if args.dry_run:
-            print(f"submit {run.run_id} -> {name} on {instance_type} tags={tags}")
+            print(f"submit {run.run_id} -> {name} on {instance_type} commit={commit[:7]} tags={tags}")
             continue
         from sagemaker.estimator import Estimator
 
@@ -110,13 +126,18 @@ def main() -> None:
             entry_point="sagemaker/entry.py",
             source_dir=str(REPO),
             hyperparameters={"model": run.model, "group": run.group, "seed": run.seed},
-            output_path=f"{args.output.rstrip('/')}/_jobs/",
+            output_path=f"{output}/_jobs/",
+            code_location=f"{output}/_code",
             checkpoint_s3_uri=None,
             base_job_name=name,
             use_spot_instances=args.spot,
             max_run=max_run,
             max_wait=max_run * 2 if args.spot else None,
-            environment={"SM_OUTPUT_PREFIX": args.output},
+            environment={
+                "SM_OUTPUT_PREFIX": args.output,
+                "DECISION_MODEL_GIT_COMMIT": commit,
+                "DECISION_MODEL_GIT_DIRTY": dirty,
+            },
             tags=tag_list,
         )
         estimator.fit({"data": args.data}, wait=False)
