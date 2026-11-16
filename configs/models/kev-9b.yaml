@@ -1,0 +1,25 @@
+# Kev-9B (jaredpalmer/kev). Values follow the experiment design document.
+name: kev-9b
+backend: kev
+checkpoint: jaredpalmer/kev-9b@v1.0
+base: Qwen/Qwen3.5-9B-Base
+base_revision: null        # fill from the checkpoint's training_config.json
+multilingual: true
+
+train:
+  lora_rank: 16
+  head_dim: 256
+  lora_targets: all
+  lr: 2.0e-5
+  epochs: 1
+  batch: 2
+  accum: 4
+  checkpointing: 1
+  weights_dtype: fp32      # set bf16 if the whole study runs on g6e.xlarge
+  dtype: bf16
+  p_none_pair: 0.25
+  extra_args: ["--option_isolation", "0", "--special_embeddings", "0"]
+
+kev_repo: https://github.com/jaredpalmer/kev.git
+kev_ref: kev-1.0
+instance: ml.g7e.2xlarge   # confirm with the smoke run's peak memory

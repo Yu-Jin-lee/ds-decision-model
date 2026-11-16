@@ -1,0 +1,29 @@
+# Clef-Flash (Cloudflare, Qwen3.5-9B backbone + joint schema head).
+# No official training recipe is published; values below are a starting
+# point to be tuned on development data during the pilot.
+name: clef-flash
+backend: clef
+checkpoint: Cloudflare/clef-flash
+revision: main            # pin to a commit hash before the main runs
+multilingual: true
+
+train:
+  lora_rank: 16
+  lora_alpha: 32
+  lora_dropout: 0.0
+  lora_targets: all        # every nn.Linear in the language model (vision tower excluded)
+  lr: 2.0e-5               # LoRA parameters
+  head_lr: 1.0e-4          # joint schema head (trained in full)
+  epochs: 1
+  batch: 2
+  accum: 4
+  weight_decay: 0.0
+  warmup_ratio: 0.03
+  max_grad_norm: 1.0
+  backbone_dtype: bf16
+  head_dtype: fp32         # head runs under bf16 autocast
+  gradient_checkpointing: true
+  max_length: 4096         # tokens per record (state + schema)
+  max_state_tokens: null
+
+instance: ml.g6e.xlarge

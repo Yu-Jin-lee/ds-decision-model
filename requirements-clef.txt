@@ -1,0 +1,7 @@
+# Versions from the Clef-Flash model card (tested on torch 2.11, transformers 5.10.2).
+# Pin peft and flash-linear-attention to the versions that pass the smoke run.
+transformers==5.10.2
+peft
+safetensors
+huggingface_hub
+flash-linear-attention
