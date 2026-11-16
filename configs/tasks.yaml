@@ -42,13 +42,28 @@ tasks:
 
   s5:
     name: S5 CDJ stage
-    state_fields: [keyword, target, intent, site, serp, is_brand]
-    label_field: label
-    variant_field: is_brand   # S4 result; selects brand / non-brand options
-    final_labels: [initial_exploration, browsing, experience, confirmation, own_service, other]
+    # Model input, built from the s5_master row (cdj_dataset/s5_master).
+    # TODO match the function production inference uses to build the state.
+    state:
+      keyword: keyword
+      target: target
+      intent: intent
+      site: site
+      industry: industry
+      category: category
+      serp: {from: serp, format: serp_compact}
+    label_field: stage        # final label (three_agree / human / bulk / ...)
+    variant_field: kind       # brand / generic, already corrected to the final label
+    variant_map: {brand: brand, generic: nonbrand}
+    variant_in_state: brand   # adds {"brand": true|false} to the state (the S4 result)
+    meta_fields: {type: meta.type, hard_type: meta.hard_type, stage_source: stage_source, kind_changed: meta.kind_changed}
+    final_labels: [initial_exploration, browsing, experience, confirmation, own_and_service, other]
     stage_order:              # for the stage-error metric (Other is off the scale)
-      brand: [browsing, experience, confirmation, own_service]
-      nonbrand: [initial_exploration, own_service]
+      brand: [browsing, experience, confirmation, own_and_service]
+      nonbrand: [initial_exploration, own_and_service]
+    variant_labels:           # labels each variant may take; prepare_data rejects others
+      brand: [browsing, experience, confirmation, own_and_service, other]
+      nonbrand: [initial_exploration, own_and_service, other]
     questions:
       s5_choice:
         type: choice
@@ -59,12 +74,12 @@ tasks:
               browsing: "Objective information about a brand or product"
               experience: "Other people's experience, reviews, rankings, comparisons"
               confirmation: "Checks right before buying: price, where to buy, discounts"
-              own_service: "After use: how-to, repair, customer service, repurchase"
+              own_and_service: "After use: how-to, repair, customer service, repurchase"
               other: "Unrelated to the journey: meaning, stock, hiring, people"
           nonbrand:
             criteria:
               initial_exploration: "Exploring a category before choosing a brand"
-              own_service: "After use: how-to, repair, customer service, repurchase"
+              own_and_service: "After use: how-to, repair, customer service, repurchase"
               other: "Unrelated to the journey: meaning, stock, hiring, people"
       s5_other:
         type: noul
@@ -76,10 +91,10 @@ tasks:
           brand:
             criteria: ["Browsing: objective information", "Experience: reviews and comparisons",
                        "Confirmation: price and where to buy", "Own & Service: after use"]
-            levels: [browsing, experience, confirmation, own_service]
+            levels: [browsing, experience, confirmation, own_and_service]
           nonbrand:
             criteria: ["Initial exploration: category level", "Own & Service: after use"]
-            levels: [initial_exploration, own_service]
+            levels: [initial_exploration, own_and_service]
     views:
       choice: {kind: single, question: s5_choice}
       split: {kind: gate, gate: s5_other, gate_label: other, inner: s5_stage}

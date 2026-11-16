@@ -30,7 +30,8 @@ sagemaker/entry.py  학습 작업 안에서 의존성 설치 후 run.py 실행
 
 ```bash
 # 1. 데이터: 마스터를 칸별 파일로 (분할은 마스터의 partition을 그대로 씀)
-python scripts/prepare_data.py --task s4 --master s4_master.jsonl --out data
+#    마스터 형식(라벨·브랜드 구분·입력 필드)은 configs/tasks.yaml의 태스크별 설정을 따름
+python scripts/prepare_data.py --task s5 --master s5_master.jsonl.gz --out data
 
 # 2. 실행 목록 확인 (1단계 27회)
 python scripts/run.py --model clef-flash --list --stage 1

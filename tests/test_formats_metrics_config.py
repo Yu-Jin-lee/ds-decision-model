@@ -44,7 +44,7 @@ def test_s5_variant_selects_options_and_levels():
     brand = build_questions(SPECS["s5"], "both", record("s5", "confirmation", "brand"))
     assert "browsing" in brand["s5_choice"]["criteria"]
     assert brand["s5_stage"]["label"] == 2
-    nonbrand = build_questions(SPECS["s5"], "split", record("s5", "own_service", "nonbrand"))
+    nonbrand = build_questions(SPECS["s5"], "split", record("s5", "own_and_service", "nonbrand"))
     assert nonbrand["s5_stage"]["criteria"][nonbrand["s5_stage"]["label"]].startswith("Own")
     with pytest.raises(ValueError):
         build_questions(SPECS["s5"], "choice", record("s5", "initial_exploration", "brand"))
@@ -55,7 +55,7 @@ def test_gate_distribution_combines_and_sums_to_one():
     answers = {
         "s5_other": {"true": 0.2, "false": 0.8},
         "s5_stage": {"0": 0.5, "1": 0.25, "2": 0.25, "3": 0.0},
-        "s5_choice": {"browsing": 0.1, "experience": 0.1, "confirmation": 0.1, "own_service": 0.1, "other": 0.6},
+        "s5_choice": {"browsing": 0.1, "experience": 0.1, "confirmation": 0.1, "own_and_service": 0.1, "other": 0.6},
     }
     views = final_distributions(SPECS["s5"], "both", r, answers)
     split = views["split"]
