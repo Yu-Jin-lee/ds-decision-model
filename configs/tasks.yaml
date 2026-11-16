@@ -51,7 +51,8 @@ tasks:
       site: site
       industry: industry
       category: category
-      serp: {from: serp, format: serp_compact}
+      # AI overview (first 1000 chars) if present, else top-3 results' title + snippet
+      serp: {from: serp, format: serp_overview_or_top, overview_chars: 1000, top_results: 3}
     label_field: stage        # final label (three_agree / human / bulk / ...)
     variant_field: kind       # brand / generic, already corrected to the final label
     variant_map: {brand: brand, generic: nonbrand}

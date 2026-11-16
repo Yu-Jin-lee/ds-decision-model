@@ -8,7 +8,7 @@ import pytest
 
 from decision_model.config import CONFIG_DIR, load_yaml
 from decision_model.formats import build_questions, load_task_specs
-from decision_model.prepare import canonical, convert, read_master, serp_compact
+from decision_model.prepare import canonical, convert, read_master, serp_compact, serp_overview_or_top
 
 TASKS = load_yaml(CONFIG_DIR / "tasks.yaml")
 S5 = TASKS["tasks"]["s5"]
@@ -37,7 +37,7 @@ def test_s5_master_row_to_canonical_record():
     assert record["state"] == {
         "keyword": "예시 무게", "target": ["예시"], "intent": ["무게"], "site": [],
         "industry": "신발", "category": "러닝화",
-        "serp": {"ai_overview": "overview", "results": [{"title": "t1", "snippet": "s1"}, {"title": "t2"}]},
+        "serp": {"ai_overview": "overview"},
         "brand": True,
     }
     assert record["meta"] == {"type": "typical", "hard_type": None, "stage_source": "three_agree", "kind_changed": False}
@@ -73,3 +73,15 @@ def test_convert_collects_errors_and_duplicates(tmp_path):
 def test_serp_compact_handles_missing_parts():
     assert serp_compact({"features": [], "ai_overview": None}) == {}
     assert serp_compact(None) is None
+
+
+def test_serp_overview_or_top():
+    long = "x" * 1500
+    serp = {"ai_overview": {"text": long, "sources": ["a"]},
+            "features": [{"title": "t1", "snippet": "s1"}], "serp_key": "k"}
+    assert serp_overview_or_top(serp) == {"ai_overview": "x" * 1000}
+    no_overview = {"features": [{"title": f"t{i}", "snippet": f"s{i}"} for i in range(5)]}
+    assert serp_overview_or_top(no_overview) == {
+        "results": [{"title": "t0", "snippet": "s0"}, {"title": "t1", "snippet": "s1"}, {"title": "t2", "snippet": "s2"}]
+    }
+    assert serp_overview_or_top({"ai_overview": "  ", "features": []}) == {"results": []}

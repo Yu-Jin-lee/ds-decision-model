@@ -59,7 +59,25 @@ def serp_compact(serp: Any) -> Any:
     return out
 
 
-FORMATS = {"serp_compact": serp_compact}
+def serp_overview_or_top(serp: Any, overview_chars: int = 1000, top_results: int = 3) -> Any:
+    """The AI overview (first ``overview_chars`` characters) when the SERP has one;
+    otherwise the top ``top_results`` organic results as title and snippet."""
+    if not isinstance(serp, dict):
+        return serp
+    overview = serp.get("ai_overview")
+    if isinstance(overview, dict):
+        overview = overview.get("text")
+    if isinstance(overview, str) and overview.strip():
+        return {"ai_overview": overview.strip()[:overview_chars]}
+    results = [
+        {k: f[k] for k in ("title", "snippet") if f.get(k)}
+        for f in serp.get("features") or []
+        if isinstance(f, dict)
+    ]
+    return {"results": [r for r in results if r][:top_results]}
+
+
+FORMATS = {"serp_compact": serp_compact, "serp_overview_or_top": serp_overview_or_top}
 
 
 def build_state(row: dict[str, Any], spec: dict[str, Any]) -> dict[str, Any]:
@@ -69,7 +87,8 @@ def build_state(row: dict[str, Any], spec: dict[str, Any]) -> dict[str, Any]:
             if isinstance(source, dict):
                 value = get_path(row, source["from"])
                 fmt = source.get("format")
-                state[name] = FORMATS[fmt](value) if fmt else value
+                options = {k: v for k, v in source.items() if k not in ("from", "format")}
+                state[name] = FORMATS[fmt](value, **options) if fmt else value
             else:
                 state[name] = get_path(row, source)
         return state
