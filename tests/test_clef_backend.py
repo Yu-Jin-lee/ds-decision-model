@@ -195,3 +195,7 @@ def test_pipeline_runs_one_cell_end_to_end(tmp_path):
     cells = summary["metrics_development"]
     assert {"s4/ko/noul", "s4/ja/choice", "s4/en/agreement"} <= set(cells)
     assert len(summary["data_manifest"]) == 12
+    # The exact model input of every partition is saved and hashed.
+    assert set(summary["model_inputs_sha256"]) >= {"train", "calibration", "development"}
+    assert set(summary["task_configs"]) == {"s4"}
+    assert (out / "model_inputs_train.jsonl.gz").exists()

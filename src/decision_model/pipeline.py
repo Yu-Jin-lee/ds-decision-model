@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import gzip
+import hashlib
 import json
 import os
 import subprocess
@@ -63,6 +65,20 @@ def _git_dirty() -> bool | None:
     return bool(status.strip())
 
 
+def save_model_inputs(out_dir: Path, partition: str, records: list[dict[str, Any]]) -> str:
+    """Write the exact records the model saw (assembled state, questions, gold) as
+    ``model_inputs_{partition}.jsonl.gz`` and return their sha256.
+
+    The data in S3 keeps raw fields and the state is assembled at load time, so
+    this file is the record of what a run actually trained and was scored on.
+    """
+    lines = "".join(json.dumps(r, ensure_ascii=False, sort_keys=True) + "\n" for r in records).encode("utf-8")
+    with open(out_dir / f"model_inputs_{partition}.jsonl.gz", "wb") as raw:
+        with gzip.GzipFile(fileobj=raw, mode="wb", mtime=0) as handle:
+            handle.write(lines)
+    return hashlib.sha256(lines).hexdigest()
+
+
 def execute(
     run: Run,
     data_root: Path,
@@ -73,7 +89,9 @@ def execute(
     config_dir: Path = CONFIG_DIR,
 ) -> dict[str, Any]:
     model_config = load_model_config(run.model, config_dir)
-    specs = load_task_specs(load_yaml(config_dir / "tasks.yaml"))
+    tasks_config = load_yaml(config_dir / "tasks.yaml")
+    specs = load_task_specs(tasks_config)
+    input_hashes: dict[str, str] = {}
     backend = backend or get_backend(model_config)
     out_dir = Path(out_root) / run.run_id
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -83,6 +101,7 @@ def execute(
     replay_records = None
     if run.train:
         train_records = build_records(data_root, specs, run.levels, run.train_langs, "train", with_labels=True)
+        input_hashes["train"] = save_model_inputs(out_dir, "train", train_records)
         if run.replay and model_config["backend"] != "kev":
             if replay_file is None or not Path(replay_file).exists():
                 raise FileNotFoundError(
@@ -92,6 +111,7 @@ def execute(
         checkpoint = backend.train(train_records, out_dir / "checkpoint", run.seed, run.replay, replay_records)
 
     calibration = build_records(data_root, specs, run.levels, run.eval_langs, "calibration", with_labels=True)
+    input_hashes["calibration"] = save_model_inputs(out_dir, "calibration", calibration)
     temperature = fit_model_temperature(calibration, backend.predict(checkpoint, calibration))
 
     summary: dict[str, Any] = {
@@ -102,10 +122,14 @@ def execute(
         "git_commit": _git_commit(),
         "git_dirty": _git_dirty(),
         "data_manifest": data_manifest(data_root),
+        # How the raw data became model input, and a hash of exactly what the model saw.
+        "task_configs": {task: tasks_config["tasks"][task] for task in run.levels},
+        "model_inputs_sha256": input_hashes,
     }
     partitions = ["development"] + (["test"] if final else [])
     for partition in partitions:
         records = build_records(data_root, specs, run.levels, run.eval_langs, partition, with_labels=True)
+        input_hashes[partition] = save_model_inputs(out_dir, partition, records)
         predictions = backend.predict(checkpoint, records)
         rows, metrics = score(specs, records, predictions, temperature)
         write_jsonl(out_dir / f"predictions_{partition}.jsonl", predictions)

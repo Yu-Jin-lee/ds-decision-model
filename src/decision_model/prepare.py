@@ -3,8 +3,9 @@
 How a row maps to a record is configured per task in configs/tasks.yaml:
 
 * ``state``: model input, as ``{name: path}`` (dotted paths into the row) or
-  ``{name: {from: path, format: serp_compact}}``. ``state_fields`` (a list of
-  top-level fields) is the short form.
+  ``{name: {from: path, format: ..., <options>}}``. ``state_fields`` (a list of
+  top-level fields) is the short form. Records keep these fields raw under
+  ``inputs``; the format is applied when the data is read (see inputs.py).
 * ``label_field`` and optional ``label_map``: the final label.
 * ``variant_field``, ``variant_map``, ``variant_in_state``: brand / non-brand.
 * ``variant_labels``: labels each variant may take.
@@ -18,6 +19,15 @@ import json
 from pathlib import Path
 from typing import Any, Iterator
 
+from .inputs import (  # noqa: F401  (re-exported for callers and tests)
+    FORMATS,
+    assemble_state,
+    extract_inputs,
+    get_path,
+    serp_compact,
+    serp_overview_or_top,
+)
+
 LANG_ALIASES = {"kr": "ko", "jp": "ja", "us": "en"}
 
 
@@ -27,72 +37,6 @@ def read_master(path: str | Path) -> Iterator[dict[str, Any]]:
         for line in handle:
             if line.strip():
                 yield json.loads(line)
-
-
-def get_path(row: dict[str, Any], path: str) -> Any:
-    value: Any = row
-    for part in path.split("."):
-        if not isinstance(value, dict):
-            return None
-        value = value.get(part)
-    return value
-
-
-def serp_compact(serp: Any) -> Any:
-    """AI overview text and the top results' title and snippet; drops ids and domains."""
-    if not isinstance(serp, dict):
-        return serp
-    out: dict[str, Any] = {}
-    overview = serp.get("ai_overview")
-    if isinstance(overview, dict):
-        overview = overview.get("text")
-    if overview:
-        out["ai_overview"] = overview
-    results = [
-        {k: f[k] for k in ("title", "snippet") if f.get(k)}
-        for f in serp.get("features") or []
-        if isinstance(f, dict)
-    ]
-    results = [r for r in results if r]
-    if results:
-        out["results"] = results
-    return out
-
-
-def serp_overview_or_top(serp: Any, overview_chars: int = 1000, top_results: int = 3) -> Any:
-    """The AI overview (first ``overview_chars`` characters) when the SERP has one;
-    otherwise the top ``top_results`` organic results as title and snippet."""
-    if not isinstance(serp, dict):
-        return serp
-    overview = serp.get("ai_overview")
-    if isinstance(overview, dict):
-        overview = overview.get("text")
-    if isinstance(overview, str) and overview.strip():
-        return {"ai_overview": overview.strip()[:overview_chars]}
-    results = [
-        {k: f[k] for k in ("title", "snippet") if f.get(k)}
-        for f in serp.get("features") or []
-        if isinstance(f, dict)
-    ]
-    return {"results": [r for r in results if r][:top_results]}
-
-
-FORMATS = {"serp_compact": serp_compact, "serp_overview_or_top": serp_overview_or_top}
-
-
-def build_state(row: dict[str, Any], spec: dict[str, Any]) -> dict[str, Any]:
-    if "state" in spec:
-        state = {}
-        for name, source in spec["state"].items():
-            if isinstance(source, dict):
-                value = get_path(row, source["from"])
-                fmt = source.get("format")
-                options = {k: v for k, v in source.items() if k not in ("from", "format")}
-                state[name] = FORMATS[fmt](value, **options) if fmt else value
-            else:
-                state[name] = get_path(row, source)
-        return state
-    return {f: row.get(f) for f in spec["state_fields"] if f != spec.get("variant_field")}
 
 
 def canonical(row: dict[str, Any], task: str, spec: dict[str, Any]) -> dict[str, Any]:
@@ -116,16 +60,15 @@ def canonical(row: dict[str, Any], task: str, spec: dict[str, Any]) -> dict[str,
         if allowed is not None and label not in allowed:
             raise ValueError(f"{row.get('id')}: label {label!r} not allowed for {variant} (allowed {allowed})")
 
-    state = build_state(row, spec)
-    if variant is not None and spec.get("variant_in_state"):
-        state[spec["variant_in_state"]] = variant == "brand"
+    inputs = extract_inputs(row, spec)
+    assemble_state(inputs, variant, spec)  # fail here, not in a training job, on a bad format
 
     record = {
         "id": row["id"],
         "task": task,
         "lang": LANG_ALIASES.get(row["lang"], row["lang"]),
         "partition": row.get("partition") or row.get("part"),
-        "state": state,
+        "inputs": inputs,
         "label": label,
         "variant": variant,
     }
