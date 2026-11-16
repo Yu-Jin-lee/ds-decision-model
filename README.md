@@ -55,6 +55,7 @@ python scripts/launch_sagemaker.py --model laya --group B0-s5-choice --seed 0 ..
 | 버킷 | `ascentai-sagemaker-211132580794-ap-northeast-2-an` (이름에 `sagemaker`가 있어야 실행 역할이 쓸 수 있음) |
 | 실행 역할 | `arn:aws:iam::211132580794:role/custom-sagemaker` |
 | 학습 이미지 | `763104351884.dkr.ecr.ap-northeast-2.amazonaws.com/pytorch:2.14-cu133-amzn2023-sagemaker` |
+| 비용 태그 | `project=ds-jf-decision-model`, `team=ds` (학습 작업은 런처가 자동으로, 버킷은 버킷 태그로 붙음. `--tag key=value`로 추가) |
 
 실행 결과는 `runs/{모델}/{실험군}/s{seed}/`에 저장됩니다.
 
