@@ -74,12 +74,12 @@ tasks:
               browsing: "Objective information about a brand or product"
               experience: "Other people's experience, reviews, rankings, comparisons"
               confirmation: "Checks right before buying: price, where to buy, discounts"
-              own_and_service: "After purchase: how-to, repair, customer service, repurchase, accessories and add-ons (e.g. phone case, EV charging station)"
+              own_and_service: "After purchase: how-to, repair, customer service, repurchase, accessories"
               other: "Unrelated to the journey: meaning, stock, hiring, people"
           nonbrand:
             criteria:
               initial_exploration: "Exploring a category before choosing a brand"
-              own_and_service: "After purchase: how-to, repair, customer service, repurchase, accessories and add-ons (e.g. phone case, EV charging station)"
+              own_and_service: "After purchase: how-to, repair, customer service, repurchase, accessories"
               other: "Unrelated to the journey: meaning, stock, hiring, people"
       s5_other:
         type: noul
