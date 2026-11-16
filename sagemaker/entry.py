@@ -32,6 +32,8 @@ def main() -> None:
     sh(sys.executable, "-m", "pip", "install", "-q", "-r", str(REPO / "requirements.txt"))
     if config["backend"] == "clef":
         sh(sys.executable, "-m", "pip", "install", "-q", "-r", str(REPO / "requirements-clef.txt"))
+    elif config["backend"] == "laya":
+        sh(sys.executable, "-m", "pip", "install", "-q", "-r", str(REPO / "requirements-laya.txt"))
     elif config["backend"] == "kev":
         kev_dir = Path(os.environ.get("KEV_DIR", "/opt/kev"))
         if not kev_dir.exists():

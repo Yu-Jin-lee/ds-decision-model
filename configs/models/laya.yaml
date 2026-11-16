@@ -1,0 +1,23 @@
+# Laya multilingual checkpoint (convaiinnovations/laya, subfolder "multilingual";
+# mmBERT-base encoder + decision head, 322M parameters).
+# Defaults follow Laya's published fine-tuning recipe (laya.train.TrainConfig):
+# the whole encoder and the head are trained, with the RLCD objective.
+name: laya
+backend: laya
+checkpoint: multilingual      # Laya alias for convaiinnovations/laya/multilingual
+multilingual: true
+
+train:
+  epochs: 4
+  micro_batch: 8
+  grad_accum: 8               # effective batch 64, as in the published notebook
+  encoder_lr: 2.5e-5
+  head_lr: 1.0e-4
+  loss: rlcd                  # or soft-ce (cross-entropy only)
+  freeze_encoder: false       # true = train the head only
+  shuffle_options: []         # e.g. [choice] to randomise option order each epoch
+  max_len: 2048               # checkpoint default is 1024; SERP inputs need more
+  head_max_len: 256           # token budget for the question and its options
+  eval_batch: 32
+
+instance: ml.g6e.xlarge
