@@ -20,6 +20,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from decision_model.config import CONFIG_DIR, expand_runs, load_model_config, load_yaml  # noqa: E402
+from decision_model.pipeline import _base_group  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[1]
 
@@ -42,7 +43,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--model", required=True)
     parser.add_argument("--stage", type=int, action="append")
-    parser.add_argument("--group", action="append", help="config group name(s) to include")
+    parser.add_argument(
+        "--group", action="append",
+        help="config group (e.g. S-s5) or one expanded group (e.g. S-s5-choice); repeatable",
+    )
+    parser.add_argument("--seed", type=int, action="append", help="only these seeds (e.g. --seed 0 for a smoke run)")
     parser.add_argument("--include-optional", action="store_true")
     parser.add_argument("--data", required=True, help="S3 prefix of the canonical data")
     parser.add_argument("--output", required=True, help="S3 prefix for run outputs")
@@ -55,14 +60,23 @@ def main() -> None:
     args = parser.parse_args()
 
     model_config = load_model_config(args.model)
+    groups_config = load_yaml(CONFIG_DIR / "groups.yaml")
+    base_groups = {_base_group(g, groups_config) for g in args.group} if args.group else None
     runs = expand_runs(
         args.model,
-        load_yaml(CONFIG_DIR / "groups.yaml"),
+        groups_config,
         load_yaml(CONFIG_DIR / "tasks.yaml"),
         stages=set(args.stage) if args.stage else None,
-        groups=set(args.group) if args.group else None,
+        groups=base_groups,
         include_optional=args.include_optional,
     )
+    if args.group:
+        wanted = set(args.group)
+        runs = [run for run in runs if run.group in wanted or _base_group(run.group, groups_config) in wanted]
+    if args.seed:
+        runs = [run for run in runs if run.seed in set(args.seed)]
+    if not runs:
+        sys.exit("no runs match the given --stage/--group/--seed")
     instance_type = args.instance_type or model_config["instance"]
 
     for run in runs:

@@ -41,9 +41,20 @@ python scripts/run.py --model clef-flash --group S-s4-noul --seed 0
 
 # 4. SageMaker로 한꺼번에 제출 (끝난 실행은 건너뜀)
 python scripts/launch_sagemaker.py --model clef-flash --stage 1 \
-  --data s3://BUCKET/decision-model/data/ --output s3://BUCKET/decision-model/runs/ \
+  --data s3://BUCKET/ds-jf-decision-model/data/ --output s3://BUCKET/ds-jf-decision-model/runs/ \
   --role <SageMaker 실행 역할 ARN> --image-uri <학습 이미지> --dry-run
+
+# 스모크 테스트: 실험군 하나, 시드 하나만 (--group은 S-s5처럼 묶음 이름, S-s5-choice처럼 하나만 지정 가능)
+python scripts/launch_sagemaker.py --model laya --group B0-s5-choice --seed 0 ...
 ```
+
+현재 AWS 설정(서울, ap-northeast-2):
+
+| 항목 | 값 |
+|---|---|
+| 버킷 | `ascentai-sagemaker-211132580794-ap-northeast-2-an` (이름에 `sagemaker`가 있어야 실행 역할이 쓸 수 있음) |
+| 실행 역할 | `arn:aws:iam::211132580794:role/custom-sagemaker` |
+| 학습 이미지 | `763104351884.dkr.ecr.ap-northeast-2.amazonaws.com/pytorch:2.14-cu133-amzn2023-sagemaker` |
 
 실행 결과는 `runs/{모델}/{실험군}/s{seed}/`에 저장됩니다.
 
