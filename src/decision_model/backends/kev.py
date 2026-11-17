@@ -16,8 +16,9 @@ import subprocess
 import time
 import urllib.error
 import urllib.request
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable, Iterator
 
 from .base import Backend, Prediction, safe_log, strip_labels
 
@@ -101,6 +102,19 @@ class KevBackend(Backend):
         return checkpoint
 
     def predict(self, checkpoint: Path | None, records: list[dict[str, Any]]) -> list[Prediction]:
+        with self.predictor(checkpoint) as predict_one:
+            return [predict_one(record) for record in records]
+
+    def inference_precision(self) -> str:
+        return "fp32 (KEV_DTYPE=fp32, evaluation path)"
+
+    @contextmanager
+    def predictor(self, checkpoint: Path | None) -> Iterator[Callable[[dict[str, Any]], Prediction]]:
+        """Start ``kev.serve`` once; each call sends one record to ``/v1/systemone``.
+
+        Timing through the local server includes a localhost HTTP round trip,
+        which is how Kev serves in production.
+        """
         port = _free_port()
         run = str(checkpoint) if checkpoint is not None else self.config["checkpoint"]
         env = dict(os.environ, KEV_TEMPERATURE="1.0", KEV_DTYPE="fp32")
@@ -112,12 +126,13 @@ class KevBackend(Backend):
         base_url = f"http://127.0.0.1:{port}"
         try:
             self._wait_ready(base_url, server)
-            predictions = []
-            for record in records:
+
+            def predict_one(record: dict[str, Any]) -> Prediction:
                 body = {"model": "kev-latest", "state": record["state"], "questions": strip_labels(record["questions"])}
                 response = self._post(f"{base_url}/v1/systemone", body)
-                predictions.append({"id": record["id"], "answers": answers_to_log_probs(response["answers"])})
-            return predictions
+                return {"id": record["id"], "answers": answers_to_log_probs(response["answers"])}
+
+            yield predict_one
         finally:
             server.terminate()
             try:

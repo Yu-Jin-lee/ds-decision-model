@@ -199,3 +199,23 @@ def test_pipeline_runs_one_cell_end_to_end(tmp_path):
     assert set(summary["model_inputs_sha256"]) >= {"train", "calibration", "development"}
     assert set(summary["task_configs"]) == {"s4"}
     assert (out / "model_inputs_train.jsonl.gz").exists()
+    # Latency is measured on the same fixed sample under batch size 1.
+    latency = summary["latency_development"]
+    assert latency["records"] == 18 and set(latency["by_task"]) == {"s4"}
+    assert latency["conditions"]["batch_size"] == 1 and latency["p95_ms"] >= latency["p50_ms"] > 0
+
+
+def test_predictor_matches_predict(tmp_path):
+    release = tmp_path / "release"
+    release.mkdir()
+    (release / "joint_head_config.json").write_text("{}")
+    backend = FakeClefBackend({"backend": "clef", "checkpoint": "fake/clef", "train": {"batch": 4}}, release)
+    records = s4_records(5)
+    batched = backend.predict(None, records)
+    with backend.predictor(None) as predict_one:
+        one_by_one = [predict_one(r) for r in records]
+    for a, b in zip(batched, one_by_one):
+        assert a["id"] == b["id"]
+        for qid in a["answers"]:
+            for key, value in a["answers"][qid].items():
+                assert abs(value - b["answers"][qid][key]) < 1e-5

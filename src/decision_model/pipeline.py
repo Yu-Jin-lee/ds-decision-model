@@ -16,6 +16,7 @@ from .config import CONFIG_DIR, REPO_ROOT, Run, expand_runs, load_model_config, 
 from .data import build_records, data_manifest, read_jsonl, write_jsonl
 from .evaluation import fit_model_temperature, score
 from .formats import load_task_specs
+from .latency import measure as measure_latency
 
 
 def find_run(model: str, group: str, seed: int, config_dir: Path = CONFIG_DIR) -> Run:
@@ -87,6 +88,7 @@ def execute(
     replay_file: Path | None = None,
     backend: Backend | None = None,
     config_dir: Path = CONFIG_DIR,
+    measure_latency_too: bool = True,
 ) -> dict[str, Any]:
     model_config = load_model_config(run.model, config_dir)
     tasks_config = load_yaml(config_dir / "tasks.yaml")
@@ -135,6 +137,12 @@ def execute(
         write_jsonl(out_dir / f"predictions_{partition}.jsonl", predictions)
         write_jsonl(out_dir / f"scored_{partition}.jsonl", rows)
         summary[f"metrics_{partition}"] = metrics
+        if partition == "development" and measure_latency_too:
+            # Same conditions for every model; see latency.py.
+            with backend.predictor(checkpoint) as predict_one:
+                latency = measure_latency(predict_one, records)
+            latency.setdefault("conditions", {})["precision"] = backend.inference_precision()
+            summary["latency_development"] = latency
 
     summary["seconds"] = round(time.time() - started, 1)
     (out_dir / "summary.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False))

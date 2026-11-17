@@ -20,9 +20,10 @@ import json
 import math
 import random
 import shutil
+from contextlib import contextmanager
 from pathlib import Path
 from types import ModuleType
-from typing import Any
+from typing import Any, Callable, Iterator
 
 from .base import Backend, Prediction, label_key, strip_labels
 
@@ -244,8 +245,19 @@ class ClefBackend(Backend):
 
     # ----- prediction ----------------------------------------------------------
     def predict(self, checkpoint: Path | None, records: list[dict[str, Any]]) -> list[Prediction]:
-        import torch
+        module, model, processor = self._load_for_eval(checkpoint)
+        return self._predict_with(module, model, processor.tokenizer, records)
 
+    def inference_precision(self) -> str:
+        return f"backbone {self.train_config.get('backbone_dtype', 'bf16')}, bf16 autocast"
+
+    @contextmanager
+    def predictor(self, checkpoint: Path | None) -> Iterator[Callable[[dict[str, Any]], Prediction]]:
+        module, model, processor = self._load_for_eval(checkpoint)
+        tokenizer = processor.tokenizer
+        yield lambda record: self._predict_with(module, model, tokenizer, [record], batch_size=1)[0]
+
+    def _load_for_eval(self, checkpoint: Path | None) -> tuple[ModuleType, Any, Any]:
         module, model, processor, _ = self._load_release()
         if checkpoint is not None:
             from peft import PeftModel
@@ -256,13 +268,16 @@ class ClefBackend(Backend):
             head_state = load_file(checkpoint / HEAD_FILE)
             model.head.load_state_dict(head_state, strict=True)
         model.eval()
-        return self._predict_with(module, model, processor.tokenizer, records)
+        return module, model, processor
 
-    def _predict_with(self, module: ModuleType, model: Any, tokenizer: Any, records: list[dict[str, Any]]) -> list[Prediction]:
+    def _predict_with(
+        self, module: ModuleType, model: Any, tokenizer: Any, records: list[dict[str, Any]], batch_size: int | None = None
+    ) -> list[Prediction]:
         import torch
 
         device = torch.device(self.device)
-        batch_size = int(self.train_config.get("eval_batch", self.train_config.get("batch", 2)))
+        if batch_size is None:
+            batch_size = int(self.train_config.get("eval_batch", self.train_config.get("batch", 2)))
         predictions: list[Prediction] = []
         with torch.inference_mode():
             for start in range(0, len(records), batch_size):
