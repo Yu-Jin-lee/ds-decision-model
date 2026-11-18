@@ -18,9 +18,9 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
 
-def sh(*command: str, cwd: Path | None = None) -> None:
+def sh(*command: str, cwd: Path | None = None, env: dict[str, str] | None = None) -> None:
     print("+", " ".join(command), flush=True)
-    subprocess.run(command, check=True, cwd=cwd)
+    subprocess.run(command, check=True, cwd=cwd, env=env)
 
 
 def main() -> None:
@@ -39,7 +39,9 @@ def main() -> None:
         if not kev_dir.exists():
             sh("git", "clone", "--depth", "1", "--branch", config.get("kev_ref", "main"), config["kev_repo"], str(kev_dir))
         sh(sys.executable, "-m", "pip", "install", "-q", "uv")
-        sh("uv", "sync", "--extra", "serve", cwd=kev_dir)
+        from decision_model.backends.kev import uv_environment
+
+        sh("uv", "sync", "--extra", "serve", cwd=kev_dir, env=uv_environment())
     sh(sys.executable, str(REPO / "scripts" / "run.py"), *args)
     upload_outputs()
 

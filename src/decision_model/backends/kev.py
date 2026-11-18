@@ -24,6 +24,18 @@ from .base import Backend, Prediction, safe_log, strip_labels
 
 DEFAULT_KEV_DIR = Path(os.environ.get("KEV_DIR", "/opt/kev"))
 
+# Set by the training image for its own Python 3.12. Kev's uv project runs its own
+# interpreter (3.13 from .python-version); inheriting these makes it load the 3.12
+# standard library and fail ("SRE module mismatch").
+_HOST_PYTHON_VARS = ("PYTHONPATH", "PYTHONHOME", "VIRTUAL_ENV")
+
+
+def uv_environment(**extra: str) -> dict[str, str]:
+    """Environment for ``uv`` commands in the Kev checkout, without the host Python's paths."""
+    env = {k: v for k, v in os.environ.items() if k not in _HOST_PYTHON_VARS}
+    env.update(extra)
+    return env
+
 
 def _free_port() -> int:
     with socket.socket() as sock:
@@ -98,7 +110,9 @@ class KevBackend(Backend):
             for record in records:
                 handle.write(json.dumps({"state": record["state"], "questions": record["questions"]}, ensure_ascii=False) + "\n")
         checkpoint = out_dir / "checkpoint"
-        subprocess.run(self.train_command(data_path, checkpoint, seed, replay), cwd=self.kev_dir, check=True)
+        subprocess.run(
+            self.train_command(data_path, checkpoint, seed, replay), cwd=self.kev_dir, env=uv_environment(), check=True
+        )
         return checkpoint
 
     def predict(self, checkpoint: Path | None, records: list[dict[str, Any]]) -> list[Prediction]:
@@ -117,7 +131,7 @@ class KevBackend(Backend):
         """
         port = _free_port()
         run = str(checkpoint) if checkpoint is not None else self.config["checkpoint"]
-        env = dict(os.environ, KEV_TEMPERATURE="1.0", KEV_DTYPE="fp32")
+        env = uv_environment(KEV_TEMPERATURE="1.0", KEV_DTYPE="fp32")
         server = subprocess.Popen(
             self._uv("kev.serve", "--run", run, "--port", str(port), extra="serve"),
             cwd=self.kev_dir,
