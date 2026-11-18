@@ -41,7 +41,7 @@ def main() -> None:
         sh(sys.executable, "-m", "pip", "install", "-q", "uv")
         from decision_model.backends.kev import uv_environment
 
-        sh("uv", "sync", "--extra", "serve", cwd=kev_dir, env=uv_environment())
+        sh("uv", "sync", "--extra", "serve", cwd=kev_dir, env=uv_environment(kev_dir))
     sh(sys.executable, str(REPO / "scripts" / "run.py"), *args)
     upload_outputs()
 
