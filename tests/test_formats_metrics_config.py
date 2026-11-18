@@ -134,3 +134,13 @@ def test_stage2_needs_selected_levels_then_expands():
     ko = [r for r in runs if r.group == "J+R-ko"][0]
     assert ko.train_langs == ("ko",) and ko.eval_langs == ("ko", "ja", "en")
     assert ko.replay == 2000 and ko.levels == {"s2": "choice", "s4": "noul", "s5": "score"}
+
+
+def test_s5_score_text_matches_choice():
+    """S5 choice and score differ only in question type: same instructions, same option text and order."""
+    for variant in ("brand", "nonbrand"):
+        choice = SPECS["s5"].question("s5_choice", variant)
+        score = SPECS["s5"].question("s5_score", variant)
+        assert score["instructions"] == choice["instructions"]
+        assert score["levels"] == list(choice["criteria"])
+        assert score["criteria"] == [f"{label}: {text}" for label, text in choice["criteria"].items()]

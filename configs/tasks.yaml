@@ -89,17 +89,24 @@ tasks:
               own_and_service: "After purchase: how-to, repair, customer service, repurchase, accessories and add-ons"
               other: "Unrelated to the journey: meaning, stock, hiring, people"
       s5_score:
+        # Same instructions and option text as s5_choice ("label: description", in the same
+        # order), so the two formats differ only in question type. tests check this.
         type: score
-        instructions: "Which purchase journey stage is the keyword at, or is it unrelated to the journey?"
+        instructions: "Which customer decision journey stage does the keyword belong to?"
         variants:
           brand:
-            criteria: ["Browsing: objective information", "Experience: reviews and comparisons",
-                       "Confirmation: price and where to buy", "Own & Service: after purchase, incl. accessories and add-ons",
-                       "Other: unrelated to the journey (meaning, stock, hiring, people)"]
+            criteria:
+              - "browsing: Objective information about a brand or product"
+              - "experience: Other people's experience, reviews, rankings, comparisons"
+              - "confirmation: Checks right before buying: price, where to buy, discounts"
+              - "own_and_service: After purchase: how-to, repair, customer service, repurchase, accessories and add-ons"
+              - "other: Unrelated to the journey: meaning, stock, hiring, people"
             levels: [browsing, experience, confirmation, own_and_service, other]
           nonbrand:
-            criteria: ["Initial exploration: category level", "Own & Service: after purchase, incl. accessories and add-ons",
-                       "Other: unrelated to the journey (meaning, stock, hiring, people)"]
+            criteria:
+              - "initial_exploration: Exploring a category before choosing a brand"
+              - "own_and_service: After purchase: how-to, repair, customer service, repurchase, accessories and add-ons"
+              - "other: Unrelated to the journey: meaning, stock, hiring, people"
             levels: [initial_exploration, own_and_service, other]
     views:
       choice: {kind: single, question: s5_choice}
