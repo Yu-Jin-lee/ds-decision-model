@@ -34,9 +34,9 @@ def test_to_laya_row_moves_labels_to_expected():
 
 
 def test_config_and_registry():
-    config = load_model_config("laya")
+    config = load_model_config("laya-multilingual")
     assert isinstance(get_backend(config), LayaBackend)
-    assert len(expand_runs("laya", load_yaml(CONFIG_DIR / "groups.yaml"), load_yaml(CONFIG_DIR / "tasks.yaml"), stages={1})) == 27
+    assert len(expand_runs("laya-multilingual", load_yaml(CONFIG_DIR / "groups.yaml"), load_yaml(CONFIG_DIR / "tasks.yaml"), stages={1})) == 27
 
 
 @pytest.fixture
@@ -77,7 +77,7 @@ def fake_laya(monkeypatch):
 
 
 def test_predict_maps_logits_to_keys_and_counts_skipped(fake_laya):
-    backend = LayaBackend({"backend": "laya", "checkpoint": "multilingual", "train": {"eval_batch": 2}}, device="cpu")
+    backend = LayaBackend({"backend": "laya", "checkpoint": "convaiinnovations/laya-multilingual", "train": {"eval_batch": 2}}, device="cpu")
     records = [
         to_model_record({"id": f"r{i}", "task": "s4", "lang": "ko", "state": {"keyword": "k"}, "label": "brand",
                          "variant": None}, SPECS["s4"], "both", with_labels=True)
@@ -94,7 +94,7 @@ def test_predict_maps_logits_to_keys_and_counts_skipped(fake_laya):
 
 
 def test_predictor_gives_the_same_answers_one_record_at_a_time(fake_laya):
-    backend = LayaBackend({"backend": "laya", "checkpoint": "multilingual", "train": {"eval_batch": 2}}, device="cpu")
+    backend = LayaBackend({"backend": "laya", "checkpoint": "convaiinnovations/laya-multilingual", "train": {"eval_batch": 2}}, device="cpu")
     records = [
         to_model_record({"id": f"r{i}", "task": "s4", "lang": "ko", "state": {"keyword": "k"}, "label": "brand",
                          "variant": None}, SPECS["s4"], "both", with_labels=True)

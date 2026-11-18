@@ -1,10 +1,10 @@
-# Laya multilingual checkpoint (convaiinnovations/laya, subfolder "multilingual";
+# Laya multilingual checkpoint (convaiinnovations/laya-multilingual;
 # mmBERT-base encoder + decision head, 322M parameters).
 # Defaults follow Laya's published fine-tuning recipe (laya.train.TrainConfig):
 # the whole encoder and the head are trained, with the RLCD objective.
-name: laya
+name: laya-multilingual
 backend: laya
-checkpoint: multilingual      # Laya alias for convaiinnovations/laya/multilingual
+checkpoint: convaiinnovations/laya-multilingual
 multilingual: true
 
 train:

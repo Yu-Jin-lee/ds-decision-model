@@ -1,4 +1,4 @@
-"""Laya backend (convaiinnovations/laya, multilingual checkpoint).
+"""Laya backend (convaiinnovations/laya-multilingual checkpoint).
 
 Laya ships its own training loop (``laya.train``); this backend calls it rather
 than re-implementing it:

@@ -47,7 +47,7 @@ python scripts/launch_sagemaker.py --model clef-flash --stage 1 \
   --role <SageMaker 실행 역할 ARN> --image-uri <학습 이미지> --dry-run
 
 # 스모크 테스트: 실험군 하나, 시드 하나만 (--group은 S-s5처럼 묶음 이름, S-s5-choice처럼 하나만 지정 가능)
-python scripts/launch_sagemaker.py --model laya --group B0-s5-choice --seed 0 ...
+python scripts/launch_sagemaker.py --model laya-multilingual --group B0-s5-choice --seed 0 ...
 ```
 
 현재 AWS 설정(서울, ap-northeast-2):
@@ -87,9 +87,9 @@ test 파티션은 `--final`을 줄 때만 평가합니다. 최종 후보에 한 
 - replay를 쓰는 실험군(J+R-*)은 Kev 형식의 범용 데이터 파일이 필요합니다. `data/replay.jsonl`에 두거나 `--replay-file`로 지정합니다.
 
 **Laya** (`backends/laya.py`)
-- Laya 패키지의 학습 함수(`laya.train.train_model`)를 그대로 호출합니다. 체크포인트는 다국어용 `multilingual`입니다.
+- Laya 패키지의 학습 함수(`laya.train.train_model`)를 그대로 호출합니다. 체크포인트는 다국어용 `convaiinnovations/laya-multilingual`입니다.
 - 기본값은 공식 레시피입니다: 인코더와 헤드 전체를 학습하고, 손실은 RLCD입니다.
-- `configs/models/laya.yaml`에서 `freeze_encoder: true`(헤드만 학습), `loss: soft-ce`(cross-entropy만)로 바꿀 수 있습니다. LoRA는 지원하지 않습니다.
+- `configs/models/laya-multilingual.yaml`에서 `freeze_encoder: true`(헤드만 학습), `loss: soft-ce`(cross-entropy만)로 바꿀 수 있습니다. LoRA는 지원하지 않습니다.
 - Laya 자체의 calibration 분할과 temperature는 쓰지 않고, 다른 모델과 같은 공통 보정을 씁니다.
 - 질문마다 별도 시퀀스로 판단합니다(Kev와 같고 Clef와 다름).
 - 입력이 `max_len`을 넘거나 선택지가 헤드 예산(`head_max_len`)에 안 들어가는 질문은 학습에서 빠지고, 평가에서는 균등 확률로 처리되며 `predictions_*.jsonl`의 `skipped`에 기록됩니다.
