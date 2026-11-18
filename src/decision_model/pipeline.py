@@ -17,6 +17,7 @@ from .data import build_records, data_manifest, read_jsonl, write_jsonl
 from .evaluation import fit_model_temperature, score
 from .formats import load_task_specs
 from .latency import measure as measure_latency
+from .latency import measure_by_view
 
 
 def find_run(model: str, group: str, seed: int, config_dir: Path = CONFIG_DIR) -> Run:
@@ -141,8 +142,13 @@ def execute(
             # Same conditions for every model; see latency.py.
             with backend.predictor(checkpoint) as predict_one:
                 latency = measure_latency(predict_one, records)
+                # Levels that train several formats (e.g. both) can be served with one
+                # question; time each format alone on the same model and records.
+                by_view = measure_by_view(predict_one, records, specs, run.levels)
             latency.setdefault("conditions", {})["precision"] = backend.inference_precision()
             summary["latency_development"] = latency
+            if by_view:
+                summary["latency_development_by_view"] = by_view
 
     summary["seconds"] = round(time.time() - started, 1)
     (out_dir / "summary.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False))

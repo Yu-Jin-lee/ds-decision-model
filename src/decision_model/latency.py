@@ -127,3 +127,50 @@ def measure(
         "environment": environment(),
     }
     return result
+
+
+def view_question_ids(view: dict[str, Any]) -> list[str]:
+    """Question ids one view asks (single: its question; gate: gate + inner)."""
+    if view["kind"] == "single":
+        return [view["question"]]
+    return [view["gate"], view["inner"]]
+
+
+def single_view_records(
+    records: list[dict[str, Any]], task: str, question_ids: list[str]
+) -> list[dict[str, Any]]:
+    """The task's records with only the given questions, as if production asked just those."""
+    out = []
+    for record in records:
+        if record["task"] != task:
+            continue
+        questions = {qid: q for qid, q in record["questions"].items() if qid in question_ids}
+        if questions:
+            out.append({**record, "questions": questions})
+    return out
+
+
+def measure_by_view(
+    predict_one: Callable[[dict[str, Any]], Any],
+    records: list[dict[str, Any]],
+    specs: dict[str, Any],
+    levels: dict[str, str],
+    **kwargs: Any,
+) -> dict[str, Any]:
+    """Latency when a level that trains several formats is asked one format at a time.
+
+    A model trained on ``both`` may be served with a single question; this times
+    exactly that, keyed ``task/view``. Levels with one view are skipped (the main
+    measurement already covers them).
+    """
+    results: dict[str, Any] = {}
+    for task, level in levels.items():
+        view_names = specs[task].views_for(level)
+        if len(view_names) < 2:
+            continue
+        for view_name in view_names:
+            ids = view_question_ids(specs[task].view(view_name))
+            subset = single_view_records(records, task, ids)
+            if subset:
+                results[f"{task}/{view_name}"] = measure(predict_one, subset, **kwargs)
+    return results
