@@ -14,6 +14,7 @@ train:
   encoder_lr: 2.5e-5
   head_lr: 1.0e-4
   loss: rlcd                  # or soft-ce (cross-entropy only)
+  w_rps: 0                    # no ordinal (RPS) term on score questions, so every model trains score the same way
   freeze_encoder: false       # true = train the head only
   shuffle_options: []         # e.g. [choice] to randomise option order each epoch
   max_len: 2048               # checkpoint default is 1024; SERP inputs need more

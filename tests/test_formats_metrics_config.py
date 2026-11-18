@@ -43,27 +43,36 @@ def test_gate_inner_question_only_on_non_gate_records():
 def test_s5_variant_selects_options_and_levels():
     brand = build_questions(SPECS["s5"], "both", record("s5", "confirmation", "brand"))
     assert "browsing" in brand["s5_choice"]["criteria"]
-    assert brand["s5_stage"]["label"] == 2
-    nonbrand = build_questions(SPECS["s5"], "split", record("s5", "own_and_service", "nonbrand"))
-    assert nonbrand["s5_stage"]["criteria"][nonbrand["s5_stage"]["label"]].startswith("Own")
+    assert brand["s5_score"]["label"] == 2
+    assert build_questions(SPECS["s5"], "score", record("s5", "other", "brand"))["s5_score"]["label"] == 4
+    nonbrand = build_questions(SPECS["s5"], "score", record("s5", "own_and_service", "nonbrand"))
+    assert nonbrand["s5_score"]["criteria"][nonbrand["s5_score"]["label"]].startswith("Own")
+    assert build_questions(SPECS["s5"], "score", record("s5", "other", "nonbrand"))["s5_score"]["label"] == 2
     with pytest.raises(ValueError):
         build_questions(SPECS["s5"], "choice", record("s5", "initial_exploration", "brand"))
 
 
 def test_gate_distribution_combines_and_sums_to_one():
+    # s2 split: gate s2_related (true -> related), inner s2_type over the unrelated types.
+    inner_keys = list(SPECS["s2"].question("s2_type", None)["criteria"])
+    answers = {"s2_related": {"true": 0.2, "false": 0.8}, "s2_type": {k: (1.0 if k == "hiring" else 0.0) for k in inner_keys}}
+    split = final_distributions(SPECS["s2"], "split", record("s2", "hiring"), answers)["split"]
+    assert split["related"] == pytest.approx(0.2)
+    assert split["hiring"] == pytest.approx(0.8)
+    assert sum(split.values()) == pytest.approx(1.0)
+
+
+def test_s5_score_view_includes_other_and_sums_to_one():
     r = record("s5", "other", "brand")
     answers = {
-        "s5_other": {"true": 0.2, "false": 0.8},
-        "s5_stage": {"0": 0.5, "1": 0.25, "2": 0.25, "3": 0.0},
+        "s5_score": {"0": 0.1, "1": 0.1, "2": 0.1, "3": 0.1, "4": 0.6},
         "s5_choice": {"browsing": 0.1, "experience": 0.1, "confirmation": 0.1, "own_and_service": 0.1, "other": 0.6},
     }
     views = final_distributions(SPECS["s5"], "both", r, answers)
-    split = views["split"]
-    assert split["other"] == pytest.approx(0.2)
-    assert split["browsing"] == pytest.approx(0.4)
-    assert sum(split.values()) == pytest.approx(1.0)
-    assert views["choice"]["initial_exploration"] == 0.0
-    assert sum(views["choice"].values()) == pytest.approx(1.0)
+    assert views["score"]["other"] == pytest.approx(0.6)
+    assert views["score"]["initial_exploration"] == 0.0
+    assert sum(views["score"].values()) == pytest.approx(1.0)
+    assert views["choice"] == pytest.approx(views["score"])
 
 
 def test_noul_view_maps_true_false_to_labels():
@@ -119,9 +128,9 @@ def test_stage2_needs_selected_levels_then_expands():
     with pytest.raises(ValueError, match="selected_levels"):
         expand_runs("kev-9b", GROUPS, TASKS, stages={2})
     groups = copy.deepcopy(GROUPS)
-    groups["selected_levels"] = {"s2": "choice", "s4": "noul", "s5": "split"}
+    groups["selected_levels"] = {"s2": "choice", "s4": "noul", "s5": "score"}
     runs = expand_runs("kev-9b", groups, TASKS, stages={2})
     assert len(runs) == 12
     ko = [r for r in runs if r.group == "J+R-ko"][0]
     assert ko.train_langs == ("ko",) and ko.eval_langs == ("ko", "ja", "en")
-    assert ko.replay == 2000 and ko.levels == {"s2": "choice", "s4": "noul", "s5": "split"}
+    assert ko.replay == 2000 and ko.levels == {"s2": "choice", "s4": "noul", "s5": "score"}

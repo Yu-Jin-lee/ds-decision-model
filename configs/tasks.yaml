@@ -88,27 +88,26 @@ tasks:
               initial_exploration: "Exploring a category before choosing a brand"
               own_and_service: "After purchase: how-to, repair, customer service, repurchase, accessories and add-ons"
               other: "Unrelated to the journey: meaning, stock, hiring, people"
-      s5_other:
-        type: noul
-        instructions: "Is the keyword unrelated to the purchase journey (meaning, stock, hiring, people)?"
-      s5_stage:
+      s5_score:
         type: score
-        instructions: "How far along the purchase journey is the keyword?"
+        instructions: "Which purchase journey stage is the keyword at, or is it unrelated to the journey?"
         variants:
           brand:
             criteria: ["Browsing: objective information", "Experience: reviews and comparisons",
-                       "Confirmation: price and where to buy", "Own & Service: after purchase, incl. accessories and add-ons"]
-            levels: [browsing, experience, confirmation, own_and_service]
+                       "Confirmation: price and where to buy", "Own & Service: after purchase, incl. accessories and add-ons",
+                       "Other: unrelated to the journey (meaning, stock, hiring, people)"]
+            levels: [browsing, experience, confirmation, own_and_service, other]
           nonbrand:
-            criteria: ["Initial exploration: category level", "Own & Service: after purchase, incl. accessories and add-ons"]
-            levels: [initial_exploration, own_and_service]
+            criteria: ["Initial exploration: category level", "Own & Service: after purchase, incl. accessories and add-ons",
+                       "Other: unrelated to the journey (meaning, stock, hiring, people)"]
+            levels: [initial_exploration, own_and_service, other]
     views:
       choice: {kind: single, question: s5_choice}
-      split: {kind: gate, gate: s5_other, gate_label: other, inner: s5_stage}
+      score: {kind: single, question: s5_score}   # stages + Other as one score question (no Other gate)
     levels:
       choice: [choice]
-      split: [split]
-      both: [choice, split]
+      score: [score]
+      both: [choice, score]
 
   s2:
     name: S2 Span related / unrelated type

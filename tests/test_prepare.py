@@ -62,7 +62,7 @@ def test_generic_row_maps_to_nonbrand_and_builds_questions():
     assert record["variant"] == "nonbrand" and model_state(record)["brand"] is False
     questions = build_questions(load_task_specs(TASKS)["s5"], "both", record)
     assert set(questions["s5_choice"]["criteria"]) == {"initial_exploration", "own_and_service", "other"}
-    assert questions["s5_stage"]["label"] == 1
+    assert questions["s5_score"]["label"] == 1
 
 
 def test_label_must_fit_the_variant():

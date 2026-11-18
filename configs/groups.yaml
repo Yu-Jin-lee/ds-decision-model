@@ -37,7 +37,7 @@ groups:
   S-s5:
     stage: 1
     tasks: [s5]
-    sweep: [choice, split, both]
+    sweep: [choice, score, both]
 
   # Stage 2: task and language axes with the selected formats.
   J+R-all:
