@@ -24,10 +24,26 @@ from decision_model.pipeline import _base_group  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[1]
 
+# Cost-allocation tags put on every training job. The S3 bucket carries the same
+# tags, so Cost Explorer can show this project's spend once they are activated.
+DEFAULT_TAGS = {"project": "ds-jf-decision-model", "team": "ds"}
+
 
 def job_name(model: str, group: str, seed: int) -> str:
     slug = re.sub(r"[^a-zA-Z0-9-]", "-", f"{model}-{group}-s{seed}").strip("-")
     return slug[:50]
+
+
+def git_state() -> tuple[str, str]:
+    """Commit and dirty flag of the local checkout, recorded in each run's summary."""
+    import subprocess
+
+    try:
+        commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=REPO, text=True).strip()
+        dirty = subprocess.check_output(["git", "status", "--porcelain"], cwd=REPO, text=True).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return "unknown", "1"
+    return commit, "1" if dirty else "0"
 
 
 def already_done(s3_output: str, run_id: str) -> bool:
@@ -56,6 +72,7 @@ def main() -> None:
     parser.add_argument("--instance-type", default=None, help="defaults to the model config's instance")
     parser.add_argument("--spot", action="store_true", help="managed spot training")
     parser.add_argument("--max-run-hours", type=int, default=12)
+    parser.add_argument("--tag", action="append", default=[], help="extra/override tag key=value")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -78,6 +95,17 @@ def main() -> None:
     if not runs:
         sys.exit("no runs match the given --stage/--group/--seed")
     instance_type = args.instance_type or model_config["instance"]
+    tags = dict(DEFAULT_TAGS)
+    for item in args.tag:
+        key, sep, value = item.partition("=")
+        if not sep or not key:
+            sys.exit(f"--tag must be key=value, got {item!r}")
+        tags[key] = value
+    tag_list = [{"Key": k, "Value": v} for k, v in tags.items()]
+    commit, dirty = git_state()
+    if dirty == "1":
+        print(f"warning: uncommitted changes; runs will record commit {commit[:7]} with git_dirty=true")
+    output = args.output.rstrip("/")
 
     for run in runs:
         if not args.dry_run and already_done(args.output, run.run_id):
@@ -85,7 +113,7 @@ def main() -> None:
             continue
         name = job_name(run.model, run.group, run.seed)
         if args.dry_run:
-            print(f"submit {run.run_id} -> {name} on {instance_type}")
+            print(f"submit {run.run_id} -> {name} on {instance_type} commit={commit[:7]} tags={tags}")
             continue
         from sagemaker.estimator import Estimator
 
@@ -98,13 +126,19 @@ def main() -> None:
             entry_point="sagemaker/entry.py",
             source_dir=str(REPO),
             hyperparameters={"model": run.model, "group": run.group, "seed": run.seed},
-            output_path=f"{args.output.rstrip('/')}/_jobs/",
+            output_path=f"{output}/_jobs/",
+            code_location=f"{output}/_code",
             checkpoint_s3_uri=None,
             base_job_name=name,
             use_spot_instances=args.spot,
             max_run=max_run,
             max_wait=max_run * 2 if args.spot else None,
-            environment={"SM_OUTPUT_PREFIX": args.output},
+            environment={
+                "SM_OUTPUT_PREFIX": args.output,
+                "DECISION_MODEL_GIT_COMMIT": commit,
+                "DECISION_MODEL_GIT_DIRTY": dirty,
+            },
+            tags=tag_list,
         )
         estimator.fit({"data": args.data}, wait=False)
         print(f"submit {run.run_id} -> {estimator.latest_training_job.name}")

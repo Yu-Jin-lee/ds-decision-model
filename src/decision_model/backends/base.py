@@ -6,8 +6,9 @@ from __future__ import annotations
 
 import math
 from abc import ABC, abstractmethod
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable, Iterator
 
 # One prediction per record: {"id": ..., "answers": {question_id: {option_key: log_prob}}}
 Prediction = dict[str, Any]
@@ -36,6 +37,21 @@ class Backend(ABC):
         ``checkpoint=None`` means the released model with no fine-tuning (B0).
         Option keys follow :func:`decision_model.formats.question_option_keys`.
         """
+
+    def inference_precision(self) -> str:
+        """Numeric precision the model runs at when predicting (recorded with latency)."""
+        return "unknown"
+
+    @contextmanager
+    def predictor(self, checkpoint: Path | None) -> Iterator[Callable[[dict[str, Any]], Prediction]]:
+        """Load the model once and yield a function that predicts one record.
+
+        Used for latency measurement (decision_model.latency): the model is loaded
+        before timing starts and each call handles exactly one record, all of its
+        questions, with the backend's evaluation settings.
+        """
+        raise NotImplementedError(f"{type(self).__name__} has no predictor")
+        yield  # pragma: no cover
 
 
 def label_key(question: dict[str, Any]) -> str:

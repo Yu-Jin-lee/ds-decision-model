@@ -4,7 +4,11 @@ Canonical records live at ``{data_root}/{task}/{lang}/{partition}.jsonl``,
 one record per keyword::
 
     {"id": ..., "task": "s4", "lang": "ko", "partition": "train",
-     "state": {...}, "label": "brand", "variant": null}
+     "inputs": {...}, "label": "brand", "variant": null}
+
+``inputs`` holds the raw input fields; the model's ``state`` is assembled from
+them when the data is read, using the task's ``state`` spec (see inputs.py).
+Older records with a ready-made ``state`` are used as they are.
 
 ``scripts/prepare_data.py`` writes this layout from the task masters. Every
 backend then builds its own training file from canonical records, so the same
@@ -19,6 +23,7 @@ from pathlib import Path
 from typing import Any, Iterable, Iterator
 
 from .formats import TaskSpec, build_questions
+from .inputs import assemble_state
 
 PARTITIONS = ("train", "calibration", "development", "test")
 
@@ -81,7 +86,7 @@ def to_model_record(
         "level": level,
         "variant": record.get("variant"),
         "gold": record["label"],
-        "state": record["state"],
+        "state": record["state"] if "state" in record else assemble_state(record["inputs"], record.get("variant"), spec.raw),
         "questions": build_questions(spec, level, record, with_labels=with_labels),
     }
 

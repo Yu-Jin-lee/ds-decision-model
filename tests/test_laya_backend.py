@@ -91,3 +91,15 @@ def test_predict_maps_logits_to_keys_and_counts_skipped(fake_laya):
     assert list(choice) == ["brand", "nonbrand"] and choice["nonbrand"] > choice["brand"]
     assert predictions[2]["skipped"] == {"s4_choice": "options_beyond_max_len"}
     assert predictions[2]["answers"]["s4_choice"]["brand"] == pytest.approx(predictions[2]["answers"]["s4_choice"]["nonbrand"])
+
+
+def test_predictor_gives_the_same_answers_one_record_at_a_time(fake_laya):
+    backend = LayaBackend({"backend": "laya", "checkpoint": "multilingual", "train": {"eval_batch": 2}}, device="cpu")
+    records = [
+        to_model_record({"id": f"r{i}", "task": "s4", "lang": "ko", "state": {"keyword": "k"}, "label": "brand",
+                         "variant": None}, SPECS["s4"], "both", with_labels=True)
+        for i in range(3)
+    ]
+    batched = backend.predict(None, records)
+    with backend.predictor(None) as predict_one:
+        assert [predict_one(r) for r in records] == batched

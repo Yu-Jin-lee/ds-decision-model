@@ -32,6 +32,8 @@ sagemaker/entry.py  학습 작업 안에서 의존성 설치 후 run.py 실행
 # 1. 데이터: 마스터를 칸별 파일로 (분할은 마스터의 partition을 그대로 씀)
 #    마스터 형식(라벨·브랜드 구분·입력 필드)은 configs/tasks.yaml의 태스크별 설정을 따름
 python scripts/prepare_data.py --task s5 --master s5_master.jsonl.gz --out data
+#    데이터에는 입력 필드를 원본 그대로(inputs) 저장하고, 모델 입력(state)은 학습 때
+#    tasks.yaml의 state 규칙으로 조립함. SERP 형식 등을 바꿔도 데이터를 다시 올릴 필요 없음
 
 # 2. 실행 목록 확인 (1단계 27회)
 python scripts/run.py --model clef-flash --list --stage 1
@@ -55,12 +57,14 @@ python scripts/launch_sagemaker.py --model laya --group B0-s5-choice --seed 0 ..
 | 버킷 | `ascentai-sagemaker-211132580794-ap-northeast-2-an` (이름에 `sagemaker`가 있어야 실행 역할이 쓸 수 있음) |
 | 실행 역할 | `arn:aws:iam::211132580794:role/custom-sagemaker` |
 | 학습 이미지 | `763104351884.dkr.ecr.ap-northeast-2.amazonaws.com/pytorch:2.14-cu133-amzn2023-sagemaker` |
+| 비용 태그 | `project=ds-jf-decision-model`, `team=ds` (학습 작업은 런처가 자동으로, 버킷은 버킷 태그로 붙음. `--tag key=value`로 추가) |
 
 실행 결과는 `runs/{모델}/{실험군}/s{seed}/`에 저장됩니다.
 
 | 파일 | 내용 |
 |---|---|
 | `summary.json` | 실행 설정, temperature, 칸별 지표, git commit, 데이터 sha256 |
+| `model_inputs_{train,calibration,development}.jsonl.gz` | 모델이 실제로 받은 입력 그대로 (조립된 state, 질문, 정답). 해시는 `summary.json`의 `model_inputs_sha256` |
 | `predictions_development.jsonl` | 보정 전 질문별 log 확률 |
 | `scored_development.jsonl` | 보정 후 최종 라벨 분포와 정답 |
 | `checkpoint/` | 학습 결과물 (어댑터 + 헤드) |

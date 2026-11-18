@@ -1,0 +1,129 @@
+"""Inference latency under the same conditions for every model.
+
+What is held fixed, so the numbers compare across models and runs:
+
+* Records: a fixed sample of the run's development records, ``per_cell`` per
+  (task, language) cell, picked by a hash of the record id. Every model sees the
+  same records in the same order for the same group.
+* Unit: one record end to end. The timer starts with the record (state and
+  questions) and stops when every question's option probabilities are back, so
+  tokenisation is included and formats with more questions take longer.
+* Batch size 1, records one after another. Kev's serving API takes one record
+  per request, so batch 1 is the only setting all three models share.
+* The model is already loaded and ``warmup`` records are run first and not
+  counted. Model loading, calibration and scoring are not timed.
+* GPU work is finished before the clock is read (``torch.cuda.synchronize``).
+* Same instance type for every run (configs/models/*.yaml); the environment is
+  recorded next to the numbers.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import os
+import platform
+import statistics
+import time
+from collections import defaultdict
+from typing import Any, Callable
+
+PER_CELL = 30
+WARMUP = 10
+
+
+def sample_records(records: list[dict[str, Any]], per_cell: int = PER_CELL) -> list[dict[str, Any]]:
+    """``per_cell`` records per (task, lang), ordered by a hash of the id."""
+    cells: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    for record in records:
+        cells[(record["task"], record["lang"])].append(record)
+    picked: list[dict[str, Any]] = []
+    for key in sorted(cells):
+        ordered = sorted(cells[key], key=lambda r: hashlib.sha256(r["id"].encode()).hexdigest())
+        picked += ordered[:per_cell]
+    return sorted(picked, key=lambda r: hashlib.sha256(r["id"].encode()).hexdigest())
+
+
+def _sync() -> None:
+    try:
+        import torch
+
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+    except ImportError:
+        pass
+
+
+def _percentile(values: list[float], q: float) -> float:
+    ordered = sorted(values)
+    index = min(len(ordered) - 1, max(0, round(q * (len(ordered) - 1))))
+    return ordered[index]
+
+
+def _stats(ms: list[float]) -> dict[str, float]:
+    return {
+        "records": len(ms),
+        "mean_ms": round(statistics.fmean(ms), 2),
+        "p50_ms": round(_percentile(ms, 0.50), 2),
+        "p95_ms": round(_percentile(ms, 0.95), 2),
+        "records_per_s": round(1000.0 / statistics.fmean(ms), 2),
+    }
+
+
+def environment() -> dict[str, Any]:
+    env: dict[str, Any] = {
+        "instance_type": os.environ.get("SM_CURRENT_INSTANCE_TYPE") or os.environ.get("DECISION_MODEL_INSTANCE_TYPE"),
+        "python": platform.python_version(),
+    }
+    try:
+        import torch
+
+        env["torch"] = torch.__version__
+        env["cuda"] = torch.version.cuda
+        if torch.cuda.is_available():
+            env["gpu"] = torch.cuda.get_device_name(0)
+    except ImportError:
+        pass
+    return env
+
+
+def measure(
+    predict_one: Callable[[dict[str, Any]], Any],
+    records: list[dict[str, Any]],
+    per_cell: int = PER_CELL,
+    warmup: int = WARMUP,
+    clock: Callable[[], float] = time.perf_counter,
+) -> dict[str, Any]:
+    """Time ``predict_one`` on the fixed sample; ``predict_one`` takes one record."""
+    sample = sample_records(records, per_cell)
+    if not sample:
+        return {"records": 0}
+    for record in sample[: min(warmup, len(sample))]:
+        predict_one(record)
+    _sync()
+
+    by_task: dict[str, list[float]] = defaultdict(list)
+    all_ms: list[float] = []
+    questions = []
+    for record in sample:
+        start = clock()
+        predict_one(record)
+        _sync()
+        elapsed = (clock() - start) * 1000.0
+        all_ms.append(elapsed)
+        by_task[record["task"]].append(elapsed)
+        questions.append(len(record["questions"]))
+
+    result = {
+        **_stats(all_ms),
+        "questions_per_record": round(statistics.fmean(questions), 2),
+        "by_task": {task: _stats(ms) for task, ms in sorted(by_task.items())},
+        "conditions": {
+            "per_cell": per_cell,
+            "warmup": warmup,
+            "batch_size": 1,
+            "unit": "one record, all its questions, end to end",
+            "sample_sha256": hashlib.sha256("\n".join(r["id"] for r in sample).encode()).hexdigest(),
+        },
+        "environment": environment(),
+    }
+    return result

@@ -10,8 +10,14 @@
 tasks:
   s4:
     name: S4 brand / non-brand
-    state_fields: [keyword, target, serp]
-    label_field: label
+    # Model input, built from the s4_master row (keyword, target, SERP per the S4 criteria).
+    state:
+      keyword: keyword
+      target: target
+      serp: {from: serp, format: serp_overview_or_top, overview_chars: 1000, top_results: 3}
+    label_field: kind         # brand / generic (three_agree / rule_human / ...)
+    label_map: {brand: brand, generic: nonbrand}
+    meta_fields: {kind_source: kind_source, gemma_wrong: meta.gemma_wrong, origin: meta.origin}
     final_labels: [brand, nonbrand]
     questions:
       s4_noul:
@@ -51,7 +57,8 @@ tasks:
       site: site
       industry: industry
       category: category
-      serp: {from: serp, format: serp_compact}
+      # AI overview (first 1000 chars) if present, else top-3 results' title + snippet
+      serp: {from: serp, format: serp_overview_or_top, overview_chars: 1000, top_results: 3}
     label_field: stage        # final label (three_agree / human / bulk / ...)
     variant_field: kind       # brand / generic, already corrected to the final label
     variant_map: {brand: brand, generic: nonbrand}
@@ -74,12 +81,12 @@ tasks:
               browsing: "Objective information about a brand or product"
               experience: "Other people's experience, reviews, rankings, comparisons"
               confirmation: "Checks right before buying: price, where to buy, discounts"
-              own_and_service: "After use: how-to, repair, customer service, repurchase"
+              own_and_service: "After purchase: how-to, repair, customer service, repurchase, accessories and add-ons"
               other: "Unrelated to the journey: meaning, stock, hiring, people"
           nonbrand:
             criteria:
               initial_exploration: "Exploring a category before choosing a brand"
-              own_and_service: "After use: how-to, repair, customer service, repurchase"
+              own_and_service: "After purchase: how-to, repair, customer service, repurchase, accessories and add-ons"
               other: "Unrelated to the journey: meaning, stock, hiring, people"
       s5_other:
         type: noul
@@ -90,10 +97,10 @@ tasks:
         variants:
           brand:
             criteria: ["Browsing: objective information", "Experience: reviews and comparisons",
-                       "Confirmation: price and where to buy", "Own & Service: after use"]
+                       "Confirmation: price and where to buy", "Own & Service: after purchase, incl. accessories and add-ons"]
             levels: [browsing, experience, confirmation, own_and_service]
           nonbrand:
-            criteria: ["Initial exploration: category level", "Own & Service: after use"]
+            criteria: ["Initial exploration: category level", "Own & Service: after purchase, incl. accessories and add-ons"]
             levels: [initial_exploration, own_and_service]
     views:
       choice: {kind: single, question: s5_choice}
@@ -105,8 +112,16 @@ tasks:
 
   s2:
     name: S2 Span related / unrelated type
-    state_fields: [industry, category, seed, keyword, serp]
+    # Model input, built from the s2_master row: S1 industry > category, seed entities,
+    # keyword and SERP (S2 labeling criteria, section 1).
+    state:
+      industry: context.category_1depth
+      category: context.category_2depth
+      seeds: context.seeds
+      keyword: keyword
+      serp: {from: serp, format: serp_overview_or_top, overview_chars: 1000, top_results: 3}
     label_field: type_num
+    meta_fields: {label_source: label_source, gemma_wrong: meta.gemma_wrong, hard: meta.hard, origin: meta.origin}
     label_map: {"0": related, "1": other_category, "2": same_name_other_category, "3": hiring,
                 "4": stock_finance, "5": news_pr, "6": person, "7": other_unrelated}
     final_labels: [related, other_category, same_name_other_category, hiring,

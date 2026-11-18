@@ -17,8 +17,9 @@ not see each other (like Kev, unlike Clef).
 from __future__ import annotations
 
 import json
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable, Iterator
 
 from .base import Backend, Prediction, safe_log, strip_labels
 
@@ -113,18 +114,36 @@ class LayaBackend(Backend):
         (out_dir / META_FILE).write_text(json.dumps(meta, indent=2, ensure_ascii=False))
         return out_dir
 
-    def predict(self, checkpoint: Path | None, records: list[dict[str, Any]]) -> list[Prediction]:
-        import torch
-
-        from laya.common import collate_items, uses_parallel_layout
-        from laya.train import _forward, encode_item, encode_state, load_checkpoint, make_item, resolve_device, to_internal
+    def _load(self, checkpoint: Path | None) -> tuple[Any, Any, Any, Any]:
+        from laya.train import load_checkpoint, resolve_device
 
         model, tokenizer, cfg = load_checkpoint(str(checkpoint) if checkpoint is not None else self.config["checkpoint"])
         device = resolve_device(self.device)
         model.to(device).eval()
+        return model, tokenizer, cfg, device
+
+    def predict(self, checkpoint: Path | None, records: list[dict[str, Any]]) -> list[Prediction]:
+        loaded = self._load(checkpoint)
+        return self._predict_loaded(loaded, records, int(self.train_config.get("eval_batch", 32)))
+
+    def inference_precision(self) -> str:
+        return "fp32 (amp off)"
+
+    @contextmanager
+    def predictor(self, checkpoint: Path | None) -> Iterator[Callable[[dict[str, Any]], Prediction]]:
+        loaded = self._load(checkpoint)
+        # One record per call; all of its questions go through in one forward pass.
+        yield lambda record: self._predict_loaded(loaded, [record], max(1, len(record["questions"])))[0]
+
+    def _predict_loaded(self, loaded: tuple[Any, Any, Any, Any], records: list[dict[str, Any]], batch_size: int) -> list[Prediction]:
+        import torch
+
+        from laya.common import collate_items, uses_parallel_layout
+        from laya.train import _forward, encode_item, encode_state, make_item, to_internal
+
+        model, tokenizer, cfg, device = loaded
         max_len, head_max_len = self._lengths(cfg)
         parallel = uses_parallel_layout(cfg)
-        batch_size = int(self.train_config.get("eval_batch", 32))
 
         # One item per (record, question). Questions Laya cannot encode (options that
         # collapse or do not fit the head budget) get a uniform answer and are counted.
