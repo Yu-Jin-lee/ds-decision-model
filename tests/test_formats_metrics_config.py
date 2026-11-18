@@ -46,7 +46,7 @@ def test_s5_variant_selects_options_and_levels():
     assert brand["s5_score"]["label"] == 2
     assert build_questions(SPECS["s5"], "score", record("s5", "other", "brand"))["s5_score"]["label"] == 4
     nonbrand = build_questions(SPECS["s5"], "score", record("s5", "own_and_service", "nonbrand"))
-    assert nonbrand["s5_score"]["criteria"][nonbrand["s5_score"]["label"]].startswith("Own")
+    assert nonbrand["s5_score"]["criteria"][nonbrand["s5_score"]["label"]].startswith("own_and_service:")
     assert build_questions(SPECS["s5"], "score", record("s5", "other", "nonbrand"))["s5_score"]["label"] == 2
     with pytest.raises(ValueError):
         build_questions(SPECS["s5"], "choice", record("s5", "initial_exploration", "brand"))
