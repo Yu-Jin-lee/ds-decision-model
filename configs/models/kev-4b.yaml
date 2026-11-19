@@ -4,7 +4,7 @@ name: kev-4b
 backend: kev
 checkpoint: jaredpalmer/kev-4b@v1.0   # model card: v1.0 = main at 139fdd94
 base: Qwen/Qwen3.5-4B-Base
-base_revision: 1001bb4d               # from the kev-4b model card
+base_revision: 1001bb4d826a52d1f399e183466143f4da7b741b   # full SHA: Kev --init_from compares it exactly with the checkpoint
 multilingual: true
 
 train:
