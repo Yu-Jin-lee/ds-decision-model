@@ -19,6 +19,8 @@ train:
   weights_dtype: fp32        # bf16 autocast over fp32 weights, as the checkpoint was trained
   dtype: bf16
   p_none_pair: 0.25
+  max_state: 2048           # state tokens per training record (Kev default 384 drops long ko/ja SERPs); = Laya max_len.
+                            # Same data for every model: training stops if Kev still drops any record.
   extra_args: ["--option_isolation", "0", "--special_embeddings", "0"]
 
 kev_repo: https://github.com/jaredpalmer/kev.git

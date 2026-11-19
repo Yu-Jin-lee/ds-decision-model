@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import json
 import os
+import sys
+import re
 import socket
 import subprocess
 import time
@@ -29,6 +31,36 @@ DEFAULT_KEV_DIR = Path(os.environ.get("KEV_DIR", "/opt/kev"))
 # load the 3.12 standard library ("SRE module mismatch"), and inheriting the image's
 # uv settings makes `uv sync` rebuild /opt/venv itself with 3.13, which breaks the host
 # Python that runs the pipeline. So uv gets none of them and an explicit project venv.
+_DROPPED = re.compile(r"^dropped (\d+) of (\d+) records that exceed the training context")
+
+
+class TrainingDataDropped(RuntimeError):
+    """Kev left training records out for length; every model must train on the same data."""
+
+
+def run_train_without_drops(command: list[str], **kwargs: Any) -> None:
+    """Run Kev training, echoing its output, and stop it as soon as it reports dropping records.
+
+    Kev silently drops training records longer than --max_state instead of failing. Every model in
+    these experiments must see the same training data, so a drop is an error: raise max_state.
+    """
+    proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1, **kwargs)
+    assert proc.stdout is not None
+    for line in proc.stdout:
+        sys.stdout.write(line)
+        sys.stdout.flush()
+        match = _DROPPED.match(line.strip())
+        if match and int(match.group(1)) > 0:
+            proc.kill()
+            proc.wait()
+            raise TrainingDataDropped(
+                f"Kev dropped {match.group(1)} of {match.group(2)} training records for length; "
+                "raise train.max_state in the model config so every model trains on the same data"
+            )
+    if proc.wait() != 0:
+        raise subprocess.CalledProcessError(proc.returncode, command)
+
+
 _HOST_PYTHON_VARS = ("PYTHONPATH", "PYTHONHOME", "VIRTUAL_ENV", "CONDA_PREFIX")
 
 
@@ -91,6 +123,7 @@ class KevBackend(Backend):
             "--seed", str(seed),
             "--device", "cuda",
             "--dtype", str(cfg.get("dtype", "bf16")),
+            "--max_state", str(cfg.get("max_state", 2048)),
             "--out", str(out_dir),
         ]
         if self.config.get("base_revision"):
@@ -115,8 +148,8 @@ class KevBackend(Backend):
             for record in records:
                 handle.write(json.dumps({"state": record["state"], "questions": record["questions"]}, ensure_ascii=False) + "\n")
         checkpoint = out_dir / "checkpoint"
-        subprocess.run(
-            self.train_command(data_path, checkpoint, seed, replay), cwd=self.kev_dir, env=uv_environment(self.kev_dir), check=True
+        run_train_without_drops(
+            self.train_command(data_path, checkpoint, seed, replay), cwd=self.kev_dir, env=uv_environment(self.kev_dir)
         )
         return checkpoint
 
