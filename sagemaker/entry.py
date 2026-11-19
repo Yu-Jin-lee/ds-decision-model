@@ -55,8 +55,20 @@ def main() -> None:
         sh(sys.executable, "-m", "pip", "install", "-q", "uv")
         env = _clean_env()
         sh("uv", "venv", "--python", "3.12", str(DEFAULT_VLLM_VENV), env=env)
-        sh("uv", "pip", "install", "--python", str(DEFAULT_VLLM_VENV / "bin" / "python"),
-           config.get("vllm", {}).get("package", "vllm"), env=env)
+        venv_python = str(DEFAULT_VLLM_VENV / "bin" / "python")
+        sh("uv", "pip", "install", "--python", venv_python, config.get("vllm", {}).get("package", "vllm"), env=env)
+        # Download once, then split into small shards: vLLM mmaps each .safetensors file whole,
+        # and Gemma's 50 GB shard cannot be mapped with the instance's 32 GB of RAM.
+        models = Path(os.environ.get("VLLM_MODELS_DIR", "/opt/ml/models"))
+        raw, local = models / "download", models / config["name"]
+        sh(venv_python, "-c", "import sys; from huggingface_hub import snapshot_download; "
+           "snapshot_download(sys.argv[1], local_dir=sys.argv[2])", config["checkpoint"], str(raw), env=env)
+        sh(sys.executable, str(REPO / "scripts" / "reshard_safetensors.py"), str(raw), str(local),
+           "--max-gb", str(config.get("vllm", {}).get("shard_gb", 4)))
+        import shutil
+
+        shutil.rmtree(raw)
+        os.environ["VLLM_MODEL_PATH"] = str(local)   # read by the backend in every run.py process
     if "--runs" in args:
         run_batch(model, parse_runs(args[args.index("--runs") + 1]), _without(args, "--runs"))
         return

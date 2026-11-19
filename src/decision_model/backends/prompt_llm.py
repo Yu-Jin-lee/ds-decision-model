@@ -165,7 +165,10 @@ class PromptLLMBackend(Backend):
         if checkpoint is not None:
             raise ValueError(f"{self.config['name']} has no fine-tuned checkpoints")
         port = _free_port()
-        command = [str(self.venv / "bin" / "vllm"), "serve", self.config["checkpoint"],
+        # A local copy (resharded by sagemaker/entry.py) if there is one, served under the checkpoint's name.
+        model_path = os.environ.get("VLLM_MODEL_PATH") or self.config["checkpoint"]
+        command = [str(self.venv / "bin" / "vllm"), "serve", model_path,
+                   "--served-model-name", self.config["checkpoint"],
                    "--port", str(port), "--host", "127.0.0.1", *[str(a) for a in self.vllm.get("args", [])]]
         print("+", " ".join(command), flush=True)
         server = subprocess.Popen(command, env=_clean_env())

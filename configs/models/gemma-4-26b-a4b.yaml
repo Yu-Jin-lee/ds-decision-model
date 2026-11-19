@@ -12,11 +12,12 @@ trainable: false
 # vLLM server, same flags as the team's gpu02 deployment where they apply to one GPU.
 # bf16 weights need 80 GB; int8 weight-only (bf16 compute) fits the 48 GB L40S.
 vllm:
-  package: vllm               # newest release at install time; the version is recorded in summary.json
+  package: vllm==0.34.0       # checked: Gemma 4 support; MoE int8 weights quantized layer by layer while loading
   args: [--dtype, bfloat16, --quantization, int8_per_channel_weight_only,
          --max-model-len, "12288", --max-num-batched-tokens, "4096", --max-num-seqs, "96",
          --gpu-memory-utilization, "0.95", --enable-prefix-caching, --async-scheduling,
          --limit-mm-per-prompt, '{"image":0,"video":0,"audio":0}']
+  shard_gb: 4                 # resharded before serving: 32 GB RAM cannot mmap the 50 GB original shard
   max_tokens: 64              # answers are one line ("2", "1|samsung", "7|history")
   eval_concurrency: 16        # parallel requests for scoring; latency is still timed one request at a time
 
@@ -41,4 +42,4 @@ prompts:
              "4": stock_finance, "5": news_pr, "6": person, "7": other_unrelated}
 
 instance: ml.g6e.xlarge
-volume_gb: 150             # ~52 GB of bf16 weights in the HF cache plus the vLLM venv
+volume_gb: 200             # download (~52 GB) + resharded copy (~52 GB) + vLLM venv
