@@ -27,7 +27,7 @@ def test_s4_levels_build_expected_questions():
     both = build_questions(SPECS["s4"], "both", r)
     assert set(both) == {"s4_noul", "s4_choice"}
     assert both["s4_choice"]["label"] == "brand"
-    assert build_questions(SPECS["s4"], "score", record("s4", "nonbrand"))["s4_score"]["label"] == 0
+    assert build_questions(SPECS["s4"], "score", record("s4", "nonbrand"))["s4_score"]["label"] == 1
 
 
 def test_gate_inner_question_only_on_non_gate_records():
@@ -112,16 +112,17 @@ def test_fit_temperature_recovers_scale():
 
 def test_stage1_matrix_matches_design_doc():
     runs = expand_runs("clef-flash", GROUPS, TASKS, stages={1})
-    assert len(runs) == 27
-    assert {r.group for r in runs} >= {"S-s4-noul", "S-s2-split", "S-s5-both"}
+    # S2 choice/split/score/both + S4 noul/choice/both + S5 choice/score/both, 3 seeds each
+    assert len(runs) == (4 + 3 + 3) * 3
+    assert {r.group for r in runs} >= {"S-s4-noul", "S-s2-split", "S-s2-score", "S-s5-both"}
     with_optional = expand_runs("clef-flash", GROUPS, TASKS, stages={1}, include_optional=True)
-    assert len(with_optional) == 30
+    assert len(with_optional) == 33
 
 
 def test_baseline_runs_are_eval_only():
     runs = expand_runs("kev-9b", GROUPS, TASKS, stages={0})
     assert all(not r.train and r.seed == 0 for r in runs)
-    assert len(runs) == 3 + 4 + 3
+    assert len(runs) == 4 + 4 + 3   # every level of S2, S4, S5 (P0 prompt groups are optional)
 
 
 def test_stage2_needs_selected_levels_then_expands():
@@ -144,3 +145,23 @@ def test_s5_score_text_matches_choice():
         assert score["instructions"] == choice["instructions"]
         assert score["levels"] == list(choice["criteria"])
         assert score["criteria"] == [f"{label}: {text}" for label, text in choice["criteria"].items()]
+
+
+def test_choice_and_score_text_match_in_every_task():
+    """In every task, choice and score differ only in question type: same instructions,
+    same option text and order ("label: description")."""
+    cases = [("s2", None), ("s4", None), ("s5", "brand"), ("s5", "nonbrand")]
+    for task, variant in cases:
+        choice = SPECS[task].question(f"{task}_choice", variant)
+        score = SPECS[task].question(f"{task}_score", variant)
+        assert score["instructions"] == choice["instructions"], task
+        assert score["levels"] == list(choice["criteria"]), task
+        assert score["criteria"] == [f"{label}: {text}" for label, text in choice["criteria"].items()], task
+
+
+def test_split_questions_reuse_choice_wording():
+    raw = SPECS["s2"].raw["questions"]
+    first, second = raw["s2_choice"]["instructions"].split(" If not, ")
+    assert raw["s2_related"]["instructions"] == first
+    assert raw["s2_type"]["instructions"].lower().startswith(second.split(" keyword")[0].lower())
+    assert raw["s2_type"]["criteria"] == {k: v for k, v in raw["s2_choice"]["criteria"].items() if k != "related"}

@@ -8,13 +8,18 @@ weights end up on the GPU. Small shards (default 4 GB) map one at a time and fit
 The tensors' bytes are copied unchanged (no mmap, no torch): only the shard layout and the
 index change. Every other file (config, tokenizer, chat template) is copied as is.
 
-    python scripts/reshard_safetensors.py SRC_DIR DST_DIR [--max-gb 4]
+With --consume, each source file is read from its end and truncated after every shard is
+written, then deleted, so the extra disk needed is about one shard instead of a second copy
+of the model (the training job's disk had room for ~1.5 copies of Gemma, not two).
+
+    python scripts/reshard_safetensors.py SRC_DIR DST_DIR [--max-gb 4] [--consume]
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import struct
 from pathlib import Path
@@ -58,7 +63,13 @@ def write_shard(out: Path, tensors: list[tuple[str, dict, Path, int]], metadata:
                     remaining -= len(chunk)
 
 
-def reshard(src: Path, dst: Path, max_bytes: int) -> dict[str, str]:
+def _tensors(source: Path) -> tuple[list[tuple[str, dict]], dict | None, int]:
+    header, start = read_header(source)
+    tensors = sorted(((n, e) for n, e in header.items() if n != "__metadata__"), key=lambda item: item[1]["data_offsets"][0])
+    return tensors, header.get("__metadata__"), start
+
+
+def reshard(src: Path, dst: Path, max_bytes: int, consume: bool = False) -> dict[str, str]:
     dst.mkdir(parents=True, exist_ok=True)
     sources = sorted(src.glob("*.safetensors"))
     if not sources:
@@ -67,29 +78,43 @@ def reshard(src: Path, dst: Path, max_bytes: int) -> dict[str, str]:
         if path.is_file() and path.suffix != ".safetensors" and path.name != "model.safetensors.index.json":
             shutil.copy2(path, dst / path.name)
 
-    groups: list[list[tuple[str, dict, Path, int]]] = [[]]
-    sizes = [0]
+    # Plan the shards: runs of tensors in file order, each run within one source file
+    # (so a consumed file can be truncated behind every shard written from its tail).
+    plan: list[tuple[Path, int, list[tuple[str, dict]]]] = []
     metadata = None
     for source in sources:
-        header, start = read_header(source)
-        metadata = metadata or header.get("__metadata__")
-        for name, entry in sorted(
-            ((n, e) for n, e in header.items() if n != "__metadata__"), key=lambda item: item[1]["data_offsets"][0]
-        ):
+        tensors, meta, start = _tensors(source)
+        metadata = metadata or meta
+        group: list[tuple[str, dict]] = []
+        size = 0
+        for name, entry in tensors:
             nbytes = entry["data_offsets"][1] - entry["data_offsets"][0]
-            if groups[-1] and sizes[-1] + nbytes > max_bytes:
-                groups.append([])
-                sizes.append(0)
-            groups[-1].append((name, entry, source, start))
-            sizes[-1] += nbytes
+            if group and size + nbytes > max_bytes:
+                plan.append((source, start, group))
+                group, size = [], 0
+            group.append((name, entry))
+            size += nbytes
+        if group:
+            plan.append((source, start, group))
 
+    names = [f"model-{i:05d}-of-{len(plan):05d}.safetensors" for i in range(1, len(plan) + 1)]
+    order = range(len(plan) - 1, -1, -1) if consume else range(len(plan))   # tail first when consuming
     weight_map: dict[str, str] = {}
-    for i, group in enumerate(groups, 1):
-        name = f"model-{i:05d}-of-{len(groups):05d}.safetensors"
-        write_shard(dst / name, group, metadata)
-        weight_map.update({tensor: name for tensor, _, _, _ in group})
-        print(f"wrote {name}: {len(group)} tensors, {sizes[i - 1] / 1e9:.2f} GB", flush=True)
-    index = {"metadata": {"total_size": sum(sizes)}, "weight_map": dict(sorted(weight_map.items()))}
+    total = 0
+    for i in order:
+        source, start, group = plan[i]
+        write_shard(dst / names[i], [(n, e, source, start) for n, e in group], metadata)
+        nbytes = sum(e["data_offsets"][1] - e["data_offsets"][0] for _, e in group)
+        total += nbytes
+        weight_map.update({n: names[i] for n, _ in group})
+        print(f"wrote {names[i]}: {len(group)} tensors, {nbytes / 1e9:.2f} GB", flush=True)
+        if consume:
+            first = min(e["data_offsets"][0] for _, e in group)
+            if first == 0:
+                source.unlink()          # this was the file's first shard: nothing left to read
+            else:
+                os.truncate(source, start + first)
+    index = {"metadata": {"total_size": total}, "weight_map": dict(sorted(weight_map.items()))}
     (dst / "model.safetensors.index.json").write_text(json.dumps(index, indent=2))
     return weight_map
 
@@ -99,8 +124,9 @@ def main() -> None:
     parser.add_argument("src", type=Path)
     parser.add_argument("dst", type=Path)
     parser.add_argument("--max-gb", type=float, default=4.0)
+    parser.add_argument("--consume", action="store_true", help="truncate and delete the source files as they are copied")
     args = parser.parse_args()
-    reshard(args.src, args.dst, int(args.max_gb * 1e9))
+    reshard(args.src, args.dst, int(args.max_gb * 1e9), consume=args.consume)
 
 
 if __name__ == "__main__":

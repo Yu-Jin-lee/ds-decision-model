@@ -31,7 +31,7 @@ groups:
   S-s2:
     stage: 1
     tasks: [s2]
-    sweep: [choice, split, both]
+    sweep: [choice, split, score, both]
   S-s4:
     stage: 1
     tasks: [s4]

@@ -39,3 +39,40 @@ def test_reshard_keeps_every_tensor_and_other_files(tmp_path):
         assert start % 8 == 0
     for name, array in {**big, **small}.items():
         assert loaded[name].dtype == array.dtype and np.array_equal(loaded[name], array)
+
+
+def test_consume_frees_the_source_as_it_goes(tmp_path):
+    src, dst = tmp_path / "src", tmp_path / "dst"
+    src.mkdir()
+    rng = np.random.default_rng(1)
+    big = {f"expert.{i}": rng.standard_normal((40, 41)).astype(np.float32) for i in range(9)}
+    small = {"norm": rng.standard_normal((3,)).astype(np.float32)}
+    st.save_file(big, str(src / "model-00001-of-00002.safetensors"))
+    st.save_file(small, str(src / "model-00002-of-00002.safetensors"))
+    (src / "tokenizer.json").write_text("{}")
+    source_size = (src / "model-00001-of-00002.safetensors").stat().st_size
+
+    sizes = []
+    real_write = reshard.write_shard
+
+    def spy(out, tensors, metadata):
+        real_write(out, tensors, metadata)
+        path = src / "model-00001-of-00002.safetensors"
+        sizes.append(path.stat().st_size if path.exists() else 0)
+
+    reshard.write_shard = spy
+    try:
+        reshard.reshard(src, dst, max_bytes=2 * 40 * 41 * 4, consume=True)
+    finally:
+        reshard.write_shard = real_write
+
+    assert not list(src.glob("*.safetensors"))                  # sources deleted
+    assert any(0 < s < source_size for s in sizes)              # truncated while copying
+    loaded = {}
+    for shard in dst.glob("*.safetensors"):
+        loaded.update(st.load_file(str(shard)))
+    for name, array in {**big, **small}.items():
+        assert np.array_equal(loaded[name], array)
+    index = json.loads((dst / "model.safetensors.index.json").read_text())
+    assert set(index["weight_map"]) == set(big) | set(small)
+    assert (dst / "tokenizer.json").exists()

@@ -61,10 +61,12 @@ def main() -> None:
         # and Gemma's 50 GB shard cannot be mapped with the instance's 32 GB of RAM.
         models = Path(os.environ.get("VLLM_MODELS_DIR", "/opt/ml/models"))
         raw, local = models / "download", models / config["name"]
+        sh("df", "-h")
         sh(venv_python, "-c", "import sys; from huggingface_hub import snapshot_download; "
            "snapshot_download(sys.argv[1], local_dir=sys.argv[2])", config["checkpoint"], str(raw), env=env)
         sh(sys.executable, str(REPO / "scripts" / "reshard_safetensors.py"), str(raw), str(local),
-           "--max-gb", str(config.get("vllm", {}).get("shard_gb", 4)))
+           "--max-gb", str(config.get("vllm", {}).get("shard_gb", 4)), "--consume")
+        sh("df", "-h")
         import shutil
 
         shutil.rmtree(raw)

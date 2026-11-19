@@ -24,7 +24,8 @@ tasks:
     questions:
       s4_noul:
         type: noul
-        instructions: "Is the target a specific company, brand, product or service name?"
+        # Same wording as s4_choice/s4_score, as a yes/no question (true = brand).
+        instructions: "Is the target a brand (a specific company, brand, product or service name) rather than a non-brand term (a generic category or common noun)?"
         true_label: brand
         false_label: nonbrand
       s4_choice:
@@ -34,10 +35,14 @@ tasks:
           brand: "A specific company, brand, product or service name"
           nonbrand: "A generic category or common noun"
       s4_score:
+        # Same instructions and option text as s4_choice ("label: description", same order),
+        # so the two formats differ only in question type. tests check this.
         type: score
-        instructions: "How strongly is the target a specific brand name?"
-        criteria: ["Generic category (non-brand)", "Specific brand name"]
-        levels: [nonbrand, brand]
+        instructions: "Is the target a brand or a non-brand term?"
+        criteria:
+          - "brand: A specific company, brand, product or service name"
+          - "nonbrand: A generic category or common noun"
+        levels: [brand, nonbrand]
     views:
       noul: {kind: single, question: s4_noul}
       choice: {kind: single, question: s4_choice}
@@ -151,6 +156,21 @@ tasks:
           news_pr: "News or press releases"
           person: "A specific person"
           other_unrelated: "Other unrelated"
+      s2_score:
+        # Same instructions and option text as s2_choice ("label: description", same order),
+        # so the two formats differ only in question type. tests check this.
+        type: score
+        instructions: "Is the keyword related to the industry and category? If not, which type of unrelated keyword is it?"
+        criteria:
+          - "related: Related to the category's consumer journey"
+          - "other_category: About a different category"
+          - "same_name_other_category: Same name, but a different category"
+          - "hiring: Recruiting or jobs"
+          - "stock_finance: Stocks or finance"
+          - "news_pr: News or press releases"
+          - "person: A specific person"
+          - "other_unrelated: Other unrelated"
+        levels: [related, other_category, same_name_other_category, hiring, stock_finance, news_pr, person, other_unrelated]
       s2_related:
         type: noul
         instructions: "Is the keyword related to the industry and category?"
@@ -168,9 +188,11 @@ tasks:
     views:
       choice: {kind: single, question: s2_choice}
       split: {kind: gate, gate: s2_related, gate_label: related, inner: s2_type}
+      score: {kind: single, question: s2_score}
       prompt: {kind: generated, question: s2_prompt}   # generative baseline's own production prompt
     levels:
       choice: [choice]
       split: [split]
       both: [choice, split]
+      score: [score]
       prompt: [prompt]
