@@ -77,6 +77,7 @@ def to_model_record(
     spec: TaskSpec,
     level: str,
     with_labels: bool,
+    for_prediction: bool = False,
 ) -> dict[str, Any]:
     """Kev/SystemOne-shaped record. Keeps id, task, lang and gold for scoring."""
     return {
@@ -87,7 +88,7 @@ def to_model_record(
         "variant": record.get("variant"),
         "gold": record["label"],
         "state": record["state"] if "state" in record else assemble_state(record["inputs"], record.get("variant"), spec.raw),
-        "questions": build_questions(spec, level, record, with_labels=with_labels),
+        "questions": build_questions(spec, level, record, with_labels=with_labels, for_prediction=for_prediction),
     }
 
 
@@ -98,12 +99,13 @@ def build_records(
     langs: Iterable[str],
     partition: str,
     with_labels: bool,
+    for_prediction: bool = False,
 ) -> list[dict[str, Any]]:
     langs = list(langs)
     records = []
     for task, level in levels.items():
         for record in load_cells(data_root, [task], langs, partition):
-            records.append(to_model_record(record, specs[task], level, with_labels))
+            records.append(to_model_record(record, specs[task], level, with_labels, for_prediction))
     return records
 
 

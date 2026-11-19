@@ -92,8 +92,15 @@ def build_questions(
     level: str,
     record: dict[str, Any],
     with_labels: bool = True,
+    for_prediction: bool = False,
 ) -> dict[str, dict[str, Any]]:
-    """Typed questions (Kev/SystemOne shape) for one record at one level."""
+    """Typed questions (Kev/SystemOne shape) for one record at one level.
+
+    ``for_prediction``: records the model will answer (calibration, evaluation). A gate
+    view then always asks its inner question, unlabelled on records the gate decides,
+    because the final distribution needs both answers. For training (default) the inner
+    question appears only on records it labels.
+    """
     variant = record.get("variant")
     final_label = record.get("label")
     questions: dict[str, dict[str, Any]] = {}
@@ -123,10 +130,10 @@ def build_questions(
             questions[gate_id] = gate_payload
             # The inner question is trained only on records the gate does not decide,
             # but it is always asked at prediction time.
-            if not with_labels or not is_gate:
+            if not with_labels or not is_gate or for_prediction:
                 inner_spec = task.question(inner_id, variant)
                 inner_payload = _question_payload(inner_spec)
-                if with_labels:
+                if with_labels and not is_gate:
                     inner_payload["label"] = _answer_label(inner_spec, final_label)
                 questions[inner_id] = inner_payload
         else:

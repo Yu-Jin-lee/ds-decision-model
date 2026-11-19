@@ -13,6 +13,22 @@ GROUPS = load_yaml(CONFIG_DIR / "groups.yaml")
 SPECS = load_task_specs(TASKS)
 
 
+def _with_gate(tasks):
+    """The configs no longer use a gate view (S2 and S5 dropped it), but formats still
+    supports one; these tests keep it working on an S2 variant with the old split view."""
+    tasks = copy.deepcopy(tasks)
+    s2 = tasks["tasks"]["s2"]
+    s2["questions"]["s2_related"] = {"type": "noul", "instructions": "Is the keyword related to the industry and category?"}
+    s2["questions"]["s2_type"] = {"type": "choice", "instructions": "Which type of unrelated keyword is it?",
+                                  "criteria": {k: v for k, v in s2["questions"]["s2_choice"]["criteria"].items() if k != "related"}}
+    s2["views"]["split"] = {"kind": "gate", "gate": "s2_related", "gate_label": "related", "inner": "s2_type"}
+    s2["levels"]["split"] = ["split"]
+    return tasks
+
+
+GATE_SPECS = load_task_specs(_with_gate(TASKS))
+
+
 def record(task, label, variant=None):
     return {"id": "x", "task": task, "lang": "ko", "state": {"keyword": "k"}, "label": label, "variant": variant}
 
@@ -31,13 +47,13 @@ def test_s4_levels_build_expected_questions():
 
 
 def test_gate_inner_question_only_on_non_gate_records():
-    related = build_questions(SPECS["s2"], "split", record("s2", "related"))
+    related = build_questions(GATE_SPECS["s2"], "split", record("s2", "related"))
     assert related == {"s2_related": {**related["s2_related"], "label": True}}
-    unrelated = build_questions(SPECS["s2"], "split", record("s2", "hiring"))
+    unrelated = build_questions(GATE_SPECS["s2"], "split", record("s2", "hiring"))
     assert unrelated["s2_related"]["label"] is False
     assert unrelated["s2_type"]["label"] == "hiring"
     # At prediction time both are always asked.
-    assert set(build_questions(SPECS["s2"], "split", record("s2", "related"), with_labels=False)) == {"s2_related", "s2_type"}
+    assert set(build_questions(GATE_SPECS["s2"], "split", record("s2", "related"), with_labels=False)) == {"s2_related", "s2_type"}
 
 
 def test_s5_variant_selects_options_and_levels():
@@ -54,9 +70,9 @@ def test_s5_variant_selects_options_and_levels():
 
 def test_gate_distribution_combines_and_sums_to_one():
     # s2 split: gate s2_related (true -> related), inner s2_type over the unrelated types.
-    inner_keys = list(SPECS["s2"].question("s2_type", None)["criteria"])
+    inner_keys = list(GATE_SPECS["s2"].question("s2_type", None)["criteria"])
     answers = {"s2_related": {"true": 0.2, "false": 0.8}, "s2_type": {k: (1.0 if k == "hiring" else 0.0) for k in inner_keys}}
-    split = final_distributions(SPECS["s2"], "split", record("s2", "hiring"), answers)["split"]
+    split = final_distributions(GATE_SPECS["s2"], "split", record("s2", "hiring"), answers)["split"]
     assert split["related"] == pytest.approx(0.2)
     assert split["hiring"] == pytest.approx(0.8)
     assert sum(split.values()) == pytest.approx(1.0)
@@ -112,17 +128,18 @@ def test_fit_temperature_recovers_scale():
 
 def test_stage1_matrix_matches_design_doc():
     runs = expand_runs("clef-flash", GROUPS, TASKS, stages={1})
-    # S2 choice/split/score/both + S4 noul/choice/both + S5 choice/score/both, 3 seeds each
-    assert len(runs) == (4 + 3 + 3) * 3
-    assert {r.group for r in runs} >= {"S-s4-noul", "S-s2-split", "S-s2-score", "S-s5-both"}
+    # S2 choice/score/both + S4 noul/choice/both + S5 choice/score/both, 3 seeds each
+    assert len(runs) == (3 + 3 + 3) * 3
+    assert {r.group for r in runs} >= {"S-s4-noul", "S-s2-score", "S-s2-both", "S-s5-both"}
+    assert not {r.group for r in runs} & {"S-s2-split"}
     with_optional = expand_runs("clef-flash", GROUPS, TASKS, stages={1}, include_optional=True)
-    assert len(with_optional) == 33
+    assert len(with_optional) == 30
 
 
 def test_baseline_runs_are_eval_only():
     runs = expand_runs("kev-9b", GROUPS, TASKS, stages={0})
     assert all(not r.train and r.seed == 0 for r in runs)
-    assert len(runs) == 4 + 4 + 3   # every level of S2, S4, S5 (P0 prompt groups are optional)
+    assert len(runs) == 3 + 4 + 3   # every level of S2, S4, S5 (P0 prompt groups are optional)
 
 
 def test_stage2_needs_selected_levels_then_expands():
@@ -159,9 +176,35 @@ def test_choice_and_score_text_match_in_every_task():
         assert score["criteria"] == [f"{label}: {text}" for label, text in choice["criteria"].items()], task
 
 
-def test_split_questions_reuse_choice_wording():
-    raw = SPECS["s2"].raw["questions"]
-    first, second = raw["s2_choice"]["instructions"].split(" If not, ")
-    assert raw["s2_related"]["instructions"] == first
-    assert raw["s2_type"]["instructions"].lower().startswith(second.split(" keyword")[0].lower())
-    assert raw["s2_type"]["criteria"] == {k: v for k, v in raw["s2_choice"]["criteria"].items() if k != "related"}
+def test_prediction_records_always_ask_the_gate_inner_question():
+    """S2 split on a 'related' record: training asks only the gate; prediction asks both,
+    the inner one unlabelled, so the final distribution can be computed (B0 KeyError fix)."""
+    r = record("s2", "related")
+    train = build_questions(GATE_SPECS["s2"], "split", r)
+    assert set(train) == {"s2_related"}
+    pred = build_questions(GATE_SPECS["s2"], "split", r, for_prediction=True)
+    assert set(pred) == {"s2_related", "s2_type"}
+    assert pred["s2_related"]["label"] is True and "label" not in pred["s2_type"]
+    other = build_questions(GATE_SPECS["s2"], "split", record("s2", "hiring"), for_prediction=True)
+    assert other["s2_type"]["label"] == "hiring"
+
+
+def test_split_scores_related_and_unrelated_records():
+    from decision_model.evaluation import fit_model_temperature, score
+    from decision_model.formats import question_option_keys
+
+    records = []
+    for i, gold in enumerate(["related", "hiring", "person"]):
+        r = {**record("s2", gold), "id": str(i), "gold": gold, "level": "split"}
+        r["questions"] = build_questions(GATE_SPECS["s2"], "split", r, for_prediction=True)
+        records.append(r)
+    preds = []
+    for r in records:
+        answers = {}
+        for qid, q in r["questions"].items():
+            keys = question_option_keys(GATE_SPECS["s2"].question(qid, None))
+            answers[qid] = {k: (0.0 if k in ("true", "hiring") else -5.0) for k in keys}
+        preds.append({"id": r["id"], "answers": answers})
+    temperature = fit_model_temperature(records, preds)
+    rows, metrics = score(GATE_SPECS, records, preds, temperature)
+    assert len(rows) == 3 and "s2/ko/split" in metrics

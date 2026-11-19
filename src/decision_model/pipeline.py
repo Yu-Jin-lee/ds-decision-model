@@ -117,7 +117,7 @@ def execute(
         # Parsed text answers carry no probabilities: nothing to calibrate.
         temperature = 1.0
     else:
-        calibration = build_records(data_root, specs, run.levels, run.eval_langs, "calibration", with_labels=True)
+        calibration = build_records(data_root, specs, run.levels, run.eval_langs, "calibration", with_labels=True, for_prediction=True)
         input_hashes["calibration"] = save_model_inputs(out_dir, "calibration", calibration)
         temperature = fit_model_temperature(calibration, backend.predict(checkpoint, calibration))
 
@@ -135,7 +135,7 @@ def execute(
     }
     partitions = ["development"] + (["test"] if final else [])
     for partition in partitions:
-        records = build_records(data_root, specs, run.levels, run.eval_langs, partition, with_labels=True)
+        records = build_records(data_root, specs, run.levels, run.eval_langs, partition, with_labels=True, for_prediction=True)
         input_hashes[partition] = save_model_inputs(out_dir, partition, records)
         predictions = backend.predict(checkpoint, records)
         rows, metrics = score(specs, records, predictions, temperature)

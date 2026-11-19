@@ -171,28 +171,12 @@ tasks:
           - "person: A specific person"
           - "other_unrelated: Other unrelated"
         levels: [related, other_category, same_name_other_category, hiring, stock_finance, news_pr, person, other_unrelated]
-      s2_related:
-        type: noul
-        instructions: "Is the keyword related to the industry and category?"
-      s2_type:
-        type: choice
-        instructions: "Which type of unrelated keyword is it?"
-        criteria:
-          other_category: "About a different category"
-          same_name_other_category: "Same name, but a different category"
-          hiring: "Recruiting or jobs"
-          stock_finance: "Stocks or finance"
-          news_pr: "News or press releases"
-          person: "A specific person"
-          other_unrelated: "Other unrelated"
     views:
       choice: {kind: single, question: s2_choice}
-      split: {kind: gate, gate: s2_related, gate_label: related, inner: s2_type}
-      score: {kind: single, question: s2_score}
+      score: {kind: single, question: s2_score}   # all 8 labels as one score question (no related gate), like S5
       prompt: {kind: generated, question: s2_prompt}   # generative baseline's own production prompt
     levels:
       choice: [choice]
-      split: [split]
-      both: [choice, split]
       score: [score]
+      both: [choice, score]
       prompt: [prompt]
