@@ -189,7 +189,7 @@ def main() -> None:
             sys.exit("nothing to run: every selected run already has summary.json")
         name = batch_job_name(args.model, pending)
         spec = ",".join(f"{run.group}:{run.seed}" for run in pending)
-        tag_list.append({"Key": "runs", "Value": spec[:256]})
+        tag_list.append({"Key": "runs", "Value": spec.replace(",", " ")[:256]})
         for run in pending:
             print(f"batch  {run.run_id}")
         if args.dry_run:
