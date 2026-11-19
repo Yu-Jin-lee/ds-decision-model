@@ -5,9 +5,11 @@
         --data s3://BUCKET/decision-model/data/ --output s3://BUCKET/decision-model/runs/ \
         --role arn:aws:iam::ACCOUNT:role/SageMakerExecutionRole --image-uri <ECR image>
 
-Each job runs one (group, seed). Runs whose summary.json already exists under
---output are skipped, so the command can be re-run after a failure.
-Use --dry-run first to see the jobs it would submit.
+Each job runs one (group, seed). With --batch, all selected runs go into ONE job
+that installs and downloads the base model once, then runs them one after another
+(each from the base checkpoint, in its own process); results are uploaded per run.
+Runs whose summary.json already exists under --output are skipped, so the command
+can be re-run after a failure. Use --dry-run first to see what it would submit.
 """
 
 from __future__ import annotations
@@ -32,6 +34,44 @@ DEFAULT_TAGS = {"project": "ds-jf-decision-model", "team": "ds"}
 def job_name(model: str, group: str, seed: int) -> str:
     slug = re.sub(r"[^a-zA-Z0-9-]", "-", f"{model}-{group}-s{seed}").strip("-")
     return slug[:50]
+
+
+# SageMaker job names are at most 63 characters and the SDK appends a 23-character
+# timestamp, so the readable part (base_job_name) gets 39.
+MAX_BASE_NAME = 39
+_LEVEL_ABBR = {"choice": "ch", "score": "sc", "both": "bo", "split": "sp", "noul": "no"}
+
+
+def _group_token(group: str) -> tuple[str, str]:
+    """``S-s5-choice`` -> ("s5", "ch"); ``B0-s5-score`` -> ("b0s5", "sc"); ``J+R-ko`` -> ("jrko", "")."""
+    parts = group.split("-")
+    if parts[0] in ("S", "B0") and len(parts) >= 3:
+        prefix = ("" if parts[0] == "S" else "b0") + parts[1]
+        rest = "-".join(parts[2:])
+        return prefix, "".join(_LEVEL_ABBR.get(p, p) for p in rest.split("-"))
+    return re.sub(r"[^a-z0-9]", "", group.lower()), ""
+
+
+def batch_job_name(model: str, runs) -> str:
+    """Readable name for a batch job, e.g. ``kev-4b-batch-b0s5sc-s5chscbo-s0`` (B0 s5 score; S5 choice, score, both; seed 0).
+
+    Falls back to ``{model}-batch-{n}runs-{hash}`` when the runs do not fit in 39 characters;
+    the full list is always in the job's ``runs`` hyperparameter and tag.
+    """
+    import hashlib
+
+    tokens: dict[str, list[str]] = {}
+    for run in runs:
+        prefix, level = _group_token(run.group)
+        levels = tokens.setdefault(prefix, [])
+        if level not in levels:
+            levels.append(level)
+    seeds = "".join(str(s) for s in sorted({run.seed for run in runs}))
+    name = "-".join([model, "batch", *(p + "".join(l) for p, l in tokens.items()), f"s{seeds}"])
+    if len(name) <= MAX_BASE_NAME:
+        return name
+    digest = hashlib.sha1(",".join(f"{r.group}:{r.seed}" for r in runs).encode()).hexdigest()[:6]
+    return f"{model}-batch-{len(runs)}runs-{digest}"[:MAX_BASE_NAME]
 
 
 def git_state() -> tuple[str, str]:
@@ -73,6 +113,7 @@ def main() -> None:
     parser.add_argument("--spot", action="store_true", help="managed spot training")
     parser.add_argument("--max-run-hours", type=int, default=12)
     parser.add_argument("--tag", action="append", default=[], help="extra/override tag key=value")
+    parser.add_argument("--batch", action="store_true", help="run all selected runs in one job, one after another")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -107,14 +148,7 @@ def main() -> None:
         print(f"warning: uncommitted changes; runs will record commit {commit[:7]} with git_dirty=true")
     output = args.output.rstrip("/")
 
-    for run in runs:
-        if not args.dry_run and already_done(args.output, run.run_id):
-            print(f"skip   {run.run_id} (summary.json exists)")
-            continue
-        name = job_name(run.model, run.group, run.seed)
-        if args.dry_run:
-            print(f"submit {run.run_id} -> {name} on {instance_type} commit={commit[:7]} tags={tags}")
-            continue
+    def submit(name: str, hyperparameters: dict) -> str:
         from sagemaker.estimator import Estimator
 
         max_run = args.max_run_hours * 3600
@@ -125,7 +159,7 @@ def main() -> None:
             instance_count=1,
             entry_point="sagemaker/entry.py",
             source_dir=str(REPO),
-            hyperparameters={"model": run.model, "group": run.group, "seed": run.seed},
+            hyperparameters=hyperparameters,
             output_path=f"{output}/_jobs/",
             code_location=f"{output}/_code",
             checkpoint_s3_uri=None,
@@ -141,8 +175,37 @@ def main() -> None:
             tags=tag_list,
         )
         estimator.fit({"data": args.data}, wait=False)
-        print(f"submit {run.run_id} -> {estimator.latest_training_job.name}")
+        return estimator.latest_training_job.name
 
+    pending = []
+    for run in runs:
+        if not args.dry_run and already_done(args.output, run.run_id):
+            print(f"skip   {run.run_id} (summary.json exists)")
+            continue
+        pending.append(run)
+
+    if args.batch:
+        if not pending:
+            sys.exit("nothing to run: every selected run already has summary.json")
+        name = batch_job_name(args.model, pending)
+        spec = ",".join(f"{run.group}:{run.seed}" for run in pending)
+        tag_list.append({"Key": "runs", "Value": spec[:256]})
+        for run in pending:
+            print(f"batch  {run.run_id}")
+        if args.dry_run:
+            print(f"submit {len(pending)} runs in one job -> {name} on {instance_type} commit={commit[:7]} "
+                  f"max {args.max_run_hours}h tags={tags}")
+            return
+        print(f"submit {len(pending)} runs in one job -> {submit(name, {'model': args.model, 'runs': spec})}")
+        return
+
+    for run in pending:
+        name = job_name(run.model, run.group, run.seed)
+        if args.dry_run:
+            print(f"submit {run.run_id} -> {name} on {instance_type} commit={commit[:7]} tags={tags}")
+            continue
+        job = submit(name, {"model": run.model, "group": run.group, "seed": run.seed})
+        print(f"submit {run.run_id} -> {job}")
 
 if __name__ == "__main__":
     main()
