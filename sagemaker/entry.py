@@ -48,6 +48,15 @@ def main() -> None:
         from decision_model.backends.kev import uv_environment
 
         sh("uv", "sync", "--extra", "serve", cwd=kev_dir, env=uv_environment(kev_dir))
+    elif config["backend"] == "prompt_llm":
+        # vLLM brings its own torch/CUDA wheels: install it in a separate venv, never the image's Python.
+        from decision_model.backends.prompt_llm import DEFAULT_VLLM_VENV, _clean_env
+
+        sh(sys.executable, "-m", "pip", "install", "-q", "uv")
+        env = _clean_env()
+        sh("uv", "venv", "--python", "3.12", str(DEFAULT_VLLM_VENV), env=env)
+        sh("uv", "pip", "install", "--python", str(DEFAULT_VLLM_VENV / "bin" / "python"),
+           config.get("vllm", {}).get("package", "vllm"), env=env)
     if "--runs" in args:
         run_batch(model, parse_runs(args[args.index("--runs") + 1]), _without(args, "--runs"))
         return

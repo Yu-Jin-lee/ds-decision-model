@@ -106,6 +106,13 @@ def build_questions(
             if with_labels:
                 payload["label"] = _answer_label(spec, final_label)
             questions[question_id] = payload
+        elif view["kind"] == "generated":
+            # A generative model answered with its own production prompt: no question
+            # type, options or wording from this file. The label is the final label.
+            payload = {"type": "generated"}
+            if with_labels:
+                payload["label"] = final_label
+            questions[view["question"]] = payload
         elif view["kind"] == "gate":
             gate_id, inner_id = view["gate"], view["inner"]
             gate_spec = task.question(gate_id, variant)
@@ -142,6 +149,9 @@ def _single_distribution(spec: dict[str, Any], probabilities: Distribution) -> D
     return {label: float(probabilities[key]) for key, label in zip(keys, labels)}
 
 
+INVALID = "__invalid__"   # parsed label of a generated answer that matched no option
+
+
 def final_distributions(
     task: TaskSpec,
     level: str,
@@ -162,6 +172,9 @@ def final_distributions(
         if view["kind"] == "single":
             spec = task.question(view["question"], variant)
             distribution.update(_single_distribution(spec, answers[view["question"]]))
+        elif view["kind"] == "generated":
+            # Keyed by final label; an unparseable output carries INVALID instead.
+            distribution.update(answers[view["question"]])
         else:
             gate_probability = float(answers[view["gate"]]["true"])
             inner_spec = task.question(view["inner"], variant)

@@ -113,9 +113,13 @@ def execute(
             replay_records = read_jsonl(replay_file)
         checkpoint = backend.train(train_records, out_dir / "checkpoint", run.seed, run.replay, replay_records)
 
-    calibration = build_records(data_root, specs, run.levels, run.eval_langs, "calibration", with_labels=True)
-    input_hashes["calibration"] = save_model_inputs(out_dir, "calibration", calibration)
-    temperature = fit_model_temperature(calibration, backend.predict(checkpoint, calibration))
+    if getattr(backend, "generative", False):
+        # Parsed text answers carry no probabilities: nothing to calibrate.
+        temperature = 1.0
+    else:
+        calibration = build_records(data_root, specs, run.levels, run.eval_langs, "calibration", with_labels=True)
+        input_hashes["calibration"] = save_model_inputs(out_dir, "calibration", calibration)
+        temperature = fit_model_temperature(calibration, backend.predict(checkpoint, calibration))
 
     summary: dict[str, Any] = {
         "run": run.to_dict(),

@@ -1,0 +1,43 @@
+# Role
+You classify a single consumer search query into exactly one stage of the consumer
+decision journey, and return that stage's number only. Choose among the 3 stages below.
+
+# Guidelines
+- A query generally consists of a 'target' keyword (the object the consumer wants to buy,
+  consume, or use; may be several words) and an 'intent' keyword (the situation, context,
+  or reason behind the search). Sometimes only one is present.
+- The 'intent' keyword is the PRIMARY signal for deciding the stage.
+- The 'site' value (a site/community name in the query, e.g., reddit, quora, wikipedia) and the
+  search-result (SERP) snippet are AUXILIARY signals that only supplement the intent.
+  If the site signal conflicts with the intent, follow the intent.
+
+Stages:
+1. Initial Exploration — searching to decide which brand/product/service to buy, with little
+   knowledge yet, using vague/category-level keywords; the consumer explores around a
+   problem/need and may first discover a product category here.
+   Cues: best, recommend, ranking, budget / value for money, category-level terms with no brand.
+2. Own & Service — post-purchase usage, troubleshooting, repurchase.
+   Intent cues: how to use, usage tips, as, repair,
+   customer service, broken, defect, community, repurchase.
+3. Other — unrelated to purchase.
+   Intent cues: hiring, careers, employment, stock, stock price, dividend.
+
+# Output Format
+Output ONLY the stage number (1-3). No label, explanation, confidence, or reasoning.
+e.g., 1
+
+# Examples
+keyword: best budget robot vacuum ranking | target: robot vacuum | intent: ranking             | site:      → 1
+keyword: robot vacuum recommendation      | target: robot vacuum | intent: recommendation      | site:      → 1
+keyword: robot vacuum filter replacement  | target: robot vacuum | intent: filter replacement  | site:      → 2
+keyword: robot vacuum stock               | target: robot vacuum | intent: stock               | site:      → 3
+
+# Input
+keyword: {keyword}
+target: {target}
+intent: {intent}
+site: {site}
+serp:
+```
+{serp}
+```

@@ -21,6 +21,10 @@ def get_backend(model_config: dict[str, Any]) -> Backend:
         from .laya import LayaBackend
 
         return LayaBackend(model_config)
+    if name == "prompt_llm":
+        from .prompt_llm import PromptLLMBackend
+
+        return PromptLLMBackend(model_config)
     raise ValueError(f"unknown backend {name!r}")
 
 

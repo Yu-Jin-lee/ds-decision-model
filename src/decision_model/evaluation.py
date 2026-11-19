@@ -7,7 +7,7 @@ from typing import Any
 
 from .backends.base import Prediction, label_key
 from .calibration import apply_temperature, fit_temperature
-from .formats import TaskSpec, final_distributions
+from .formats import INVALID, TaskSpec, final_distributions
 from .metrics import stage_error, summarize
 
 
@@ -37,6 +37,19 @@ def calibrated_answers(prediction: Prediction, temperature: float) -> dict[str, 
         probabilities = apply_temperature([options[k] for k in keys], temperature)
         answers[question_id] = dict(zip(keys, probabilities.tolist()))
     return answers
+
+
+def generated_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Metrics for a generative model's parsed answers: one label per record, no probabilities.
+
+    An unparseable answer counts as wrong. Brier, ECE and the auto-processing rate need
+    probabilities, so they are reported as None rather than computed from a one-hot guess.
+    """
+    n = len(rows)
+    correct = sum(r["prediction"] == r["gold"] for r in rows)
+    invalid = sum(r["prediction"] == INVALID for r in rows)
+    return {"n": n, "accuracy": correct / n if n else float("nan"), "invalid_rate": invalid / n if n else float("nan"),
+            "brier": None, "ece": None, "auto_rate_5pct": None}
 
 
 def score(
@@ -74,7 +87,10 @@ def score(
     metrics: dict[str, Any] = {}
     for (task, lang, view), cell_rows in sorted(grouped.items()):
         labels = specs[task].final_labels
-        cell = summarize([r["distribution"] for r in cell_rows], labels, [r["gold"] for r in cell_rows])
+        if specs[task].view(view)["kind"] == "generated":
+            cell = generated_summary(cell_rows)
+        else:
+            cell = summarize([r["distribution"] for r in cell_rows], labels, [r["gold"] for r in cell_rows])
         orders = specs[task].raw.get("stage_order")
         if orders:
             cell["stage_error"] = stage_error(

@@ -1,0 +1,55 @@
+# Role
+You classify a single consumer search query into exactly one stage of the consumer
+decision journey, and return that stage's number only. Choose among the 5 stages below.
+
+# Guidelines
+- A query generally consists of a 'target' keyword (the object the consumer wants to buy,
+  consume, or use; may be several words) and an 'intent' keyword (the situation, context,
+  or reason behind the search). Sometimes only one is present.
+- The 'intent' keyword is the PRIMARY signal for deciding the stage.
+- The 'site' value (a site/community name in the query, e.g., reddit, quora, wikipedia) and the
+  search-result (SERP) snippet are AUXILIARY signals that only supplement the intent.
+  If the site signal conflicts with the intent, follow the intent.
+
+Stages:
+1. Browsing — searching for objective information about the brand/product/service.
+   A query with only a 'target' keyword and no 'intent' also belongs here.
+   Intent cues: features, specs, performance, weight, color,
+   size, design, type, trait, lineup, "[brand]+meaning".
+2. Experience — exploring others' experiences, reviews, comparisons.
+   Intent cues: vs, ranking, compare, review, recommend,
+   pros/cons, sales.
+   Site cues: community/review sites — reddit, gsmarena, wirecutter, quora, wikipedia.
+3. Confirmation — final check right before purchase (price, where/how to buy).
+   Intent cues: buy, shipping, price, discount, lowest price,
+   pre-order, release, used, deal, where to buy.
+   Site cues: price/shopping sites — amazon, best buy, walmart, costco, ebay.
+4. Own & Service — post-purchase usage, troubleshooting, repurchase.
+   Intent cues: how to use, usage tips, as, repair,
+   customer service, broken, defect, community, repurchase.
+5. Other — unrelated to purchase.
+   Intent cues: hiring, careers, employment, stock, stock price, dividend.
+
+# Output Format
+Output ONLY the stage number (1-5). No label, explanation, confidence, or reasoning.
+e.g., 2
+
+# Examples
+keyword: ecovacs specs              | target: ecovacs           | intent: specs              | site:         → 1
+keyword: narwal vs roomba           | target: narwal,roomba     | intent: vs                 | site:         → 2
+keyword: lg gram laptop review reddit | target: lg gram laptop   | intent: review             | site: reddit  → 2
+keyword: galaxy watch review amazon | target: galaxy watch      | intent: review             | site: amazon  → 2   (intent wins over site)
+keyword: ecovacs cheapest           | target: ecovacs           | intent: cheapest           | site:         → 3
+keyword: roomba bestbuy             | target: roomba            | intent:                   | site: bestbuy → 3   (site fills empty intent)
+keyword: ecovacs filter replacement | target: ecovacs           | intent: filter replacement | site:         → 4
+keyword: ecovacs careers            | target: ecovacs           | intent: careers            | site:         → 5
+
+# Input
+keyword: {keyword}
+target: {target}
+intent: {intent}
+site: {site}
+serp:
+```
+{serp}
+```

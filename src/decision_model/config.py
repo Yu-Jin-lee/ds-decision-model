@@ -88,7 +88,10 @@ def expand_runs(
         sweep = group.get("sweep")
         if sweep == "all_levels":
             for task in tasks:
-                for level in tasks_config["tasks"][task]["levels"]:
+                task_config = tasks_config["tasks"][task]
+                for level in task_config["levels"]:
+                    if all(task_config["views"][v]["kind"] == "generated" for v in task_config["levels"][level]):
+                        continue  # prompt baselines run in their own groups (P0-*)
                     variants.append((f"{name}-{task}-{level}", (task,), {task: level}))
         elif sweep is not None:
             if len(tasks) != 1:

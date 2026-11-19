@@ -5,6 +5,8 @@
 # A view turns model answers into a distribution over the task's final labels.
 #   single: one question; noul maps true/false to labels, score maps levels to labels
 #   gate:   a noul gate decides one label; otherwise the inner question decides
+#   generated: a generative model's parsed answer to its own production prompt (no question
+#           type here; level `prompt`, run only in the P0-* groups)
 # A level is the list of views trained together in one record.
 
 tasks:
@@ -40,11 +42,13 @@ tasks:
       noul: {kind: single, question: s4_noul}
       choice: {kind: single, question: s4_choice}
       score: {kind: single, question: s4_score}
+      prompt: {kind: generated, question: s4_prompt}   # generative baseline's own production prompt
     levels:
       noul: [noul]
       choice: [choice]
       both: [noul, choice]
       score: [score]          # optional level
+      prompt: [prompt]
 
   s5:
     name: S5 CDJ stage
@@ -111,10 +115,12 @@ tasks:
     views:
       choice: {kind: single, question: s5_choice}
       score: {kind: single, question: s5_score}   # stages + Other as one score question (no Other gate)
+      prompt: {kind: generated, question: s5_prompt}   # generative baseline's own production prompt
     levels:
       choice: [choice]
       score: [score]
       both: [choice, score]
+      prompt: [prompt]
 
   s2:
     name: S2 Span related / unrelated type
@@ -162,7 +168,9 @@ tasks:
     views:
       choice: {kind: single, question: s2_choice}
       split: {kind: gate, gate: s2_related, gate_label: related, inner: s2_type}
+      prompt: {kind: generated, question: s2_prompt}   # generative baseline's own production prompt
     levels:
       choice: [choice]
       split: [split]
       both: [choice, split]
+      prompt: [prompt]

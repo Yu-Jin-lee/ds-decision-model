@@ -1,0 +1,43 @@
+# Role
+You classify a single consumer search query into exactly one stage of the consumer
+decision journey, and return that stage's number only. Choose among the 3 stages below.
+
+# Guidelines
+- A query generally consists of a 'target' keyword (the object the consumer wants to buy,
+  consume, or use; may be several words) and an 'intent' keyword (the situation, context,
+  or reason behind the search). Sometimes only one is present.
+- The 'intent' keyword is the PRIMARY signal for deciding the stage.
+- The 'site' value (a site/community name in the query, e.g., なんJ, 知恵袋, wiki) and the
+  search-result (SERP) snippet are AUXILIARY signals that only supplement the intent.
+  If the site signal conflicts with the intent, follow the intent.
+
+Stages:
+1. Initial Exploration — searching to decide which brand/product/service to buy, with little
+   knowledge yet, using vague/category-level keywords; the consumer explores around a
+   problem/need and may first discover a product category here.
+   Cues: おすすめ, ランキング, コスパ, category-level terms with no brand.
+2. Own & Service — post-purchase usage, troubleshooting, repurchase.
+   Intent cues: 使い方, 活用法, as, 修理,
+   カスタマーセンター, 故障, 不良, コミュニティ, 再購入.
+3. Other — unrelated to purchase.
+   Intent cues: 採用, 就職, 株式, 株価, 配当.
+
+# Output Format
+Output ONLY the stage number (1-3). No label, explanation, confidence, or reasoning.
+e.g., 1
+
+# Examples
+keyword: コスパ ロボット掃除機 ランキング | target: ロボット掃除機 | intent: ランキング     | site:      → 1
+keyword: ロボット掃除機 おすすめ          | target: ロボット掃除機 | intent: おすすめ       | site:      → 1
+keyword: ロボット掃除機 フィルター 交換周期 | target: ロボット掃除機 | intent: フィルター交換 | site:      → 2
+keyword: ロボット掃除機 株価              | target: ロボット掃除機 | intent: 株価           | site:      → 3
+
+# Input
+keyword: {keyword}
+target: {target}
+intent: {intent}
+site: {site}
+serp:
+```
+{serp}
+```

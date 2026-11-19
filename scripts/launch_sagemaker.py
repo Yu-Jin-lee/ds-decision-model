@@ -45,6 +45,8 @@ _LEVEL_ABBR = {"choice": "ch", "score": "sc", "both": "bo", "split": "sp", "noul
 def _group_token(group: str) -> tuple[str, str]:
     """``S-s5-choice`` -> ("s5", "ch"); ``B0-s5-score`` -> ("b0s5", "sc"); ``J+R-ko`` -> ("jrko", "")."""
     parts = group.split("-")
+    if parts[0] == "P0" and len(parts) == 2:
+        return "p0" + parts[1], ""
     if parts[0] in ("S", "B0") and len(parts) >= 3:
         prefix = ("" if parts[0] == "S" else "b0") + parts[1]
         rest = "-".join(parts[2:])
@@ -68,6 +70,15 @@ def batch_job_name(model: str, runs) -> str:
             levels.append(level)
     seeds = "".join(str(s) for s in sorted({run.seed for run in runs}))
     name = "-".join([model, "batch", *(p + "".join(l) for p, l in tokens.items()), f"s{seeds}"])
+    if len(name) <= MAX_BASE_NAME:
+        return name
+    # Shorter: tasks that ran the same levels share one token, e.g. b0s2ch-b0s4ch -> b0s2s4ch.
+    merged: dict[tuple[str, str], str] = {}
+    for prefix, levels in tokens.items():
+        kind = prefix[:2] if prefix[:2] in ("b0", "p0") else ""
+        merged.setdefault((kind, "".join(levels)), kind)
+        merged[(kind, "".join(levels))] += prefix[len(kind):]
+    name = "-".join([model, "batch", *(head + lv for (_, lv), head in merged.items()), f"s{seeds}"])
     if len(name) <= MAX_BASE_NAME:
         return name
     digest = hashlib.sha1(",".join(f"{r.group}:{r.seed}" for r in runs).encode()).hexdigest()[:6]
@@ -157,6 +168,7 @@ def main() -> None:
             role=args.role,
             instance_type=instance_type,
             instance_count=1,
+            volume_size=int(model_config.get("volume_gb", 30)),
             entry_point="sagemaker/entry.py",
             source_dir=str(REPO),
             hyperparameters=hyperparameters,

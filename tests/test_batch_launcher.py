@@ -27,3 +27,13 @@ def test_batch_name_falls_back_when_too_long():
                   for s in (0, 1, 2)])
     name = launch.batch_job_name("laya-multilingual", many)
     assert name.startswith("laya-multilingual-batch-18runs-") and len(name) <= launch.MAX_BASE_NAME
+
+
+def test_batch_name_merges_tasks_with_the_same_level():
+    items = runs(*((f"B0-{t}-choice", 0) for t in ("s2", "s4", "s5")))
+    assert launch.batch_job_name("gemma-4-26b-a4b", items) == "gemma-4-26b-a4b-batch-b0s2s4s5ch-s0"
+
+
+def test_batch_name_for_prompt_baseline_groups():
+    items = runs(("P0-s2", 0), ("P0-s4", 0), ("P0-s5", 0))
+    assert launch.batch_job_name("gemma-4-26b-a4b", items) == "gemma-4-26b-a4b-batch-p0s2-p0s4-p0s5-s0"
