@@ -71,6 +71,22 @@ python scripts/launch_sagemaker.py --model laya-multilingual --group B0-s5-choic
 
 test 파티션은 `--final`을 줄 때만 평가합니다. 최종 후보에 한 번만 씁니다.
 
+### 학습은 끝났는데 그 뒤에 실패한 실행 이어서 돌리기
+
+학습 작업이 실패해도 SageMaker는 `/opt/ml/model`을 `_jobs/<작업 이름>/output/model.tar.gz`로 올립니다.
+학습을 마친 실행이면 그 안에 `{모델}/{실험군}/s{seed}/checkpoint/checkpoint/`가 남아 있으니, 학습은 건너뛰고 보정·평가·저장만 다시 돌립니다.
+
+```bash
+# SageMaker: 이전 작업의 model.tar.gz에 체크포인트가 있는 실행은 학습을 건너뜀 (없는 실행은 처음부터 학습)
+python scripts/launch_sagemaker.py --model kev-4b --group J-best --seed 0 --batch \
+  --resume-from s3://BUCKET/ds-jf-decision-model/runs/_jobs/<실패한 작업 이름>/output/model.tar.gz ...
+
+# 로컬: 체크포인트 폴더를 직접 지정
+python scripts/run.py --model kev-4b --group J-best --seed 0 --checkpoint <압축 푼 폴더>/kev-4b/J-best/s0/checkpoint/checkpoint
+```
+
+체크포인트는 새 실행 폴더의 `checkpoint/checkpoint/`로 복사되어 함께 올라가고, `summary.json`의 `resumed_from`에 원래 위치가 남습니다.
+
 ## 모델 추가하기
 
 1. `configs/models/<이름>.yaml`을 만듭니다. `backend`로 학습 방식을 고릅니다.

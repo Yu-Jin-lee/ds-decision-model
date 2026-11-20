@@ -6,6 +6,7 @@ import gzip
 import hashlib
 import json
 import os
+import shutil
 import subprocess
 import time
 from pathlib import Path
@@ -90,7 +91,10 @@ def execute(
     backend: Backend | None = None,
     config_dir: Path = CONFIG_DIR,
     measure_latency_too: bool = True,
+    checkpoint: Path | None = None,
 ) -> dict[str, Any]:
+    """``checkpoint``: a checkpoint this run already trained (e.g. from a failed job's
+    model.tar.gz). Training is skipped and everything after it runs as usual."""
     model_config = load_model_config(run.model, config_dir)
     tasks_config = load_yaml(config_dir / "tasks.yaml")
     specs = load_task_specs(tasks_config)
@@ -100,11 +104,23 @@ def execute(
     out_dir.mkdir(parents=True, exist_ok=True)
     started = time.time()
 
-    checkpoint = None
+    resumed_from = None
+    if checkpoint is not None:
+        if not run.train:
+            raise ValueError(f"{run.run_id} does not train; it has no checkpoint to resume from")
+        if not Path(checkpoint).exists():
+            raise FileNotFoundError(f"checkpoint {checkpoint} does not exist")
+        resumed_from = str(checkpoint)
+        # Keep the run folder's usual layout (checkpoint/checkpoint), so it is uploaded with the run.
+        local = out_dir / "checkpoint" / "checkpoint"
+        if Path(checkpoint).resolve() != local.resolve():
+            shutil.copytree(checkpoint, local, dirs_exist_ok=True)
+        checkpoint = local
     replay_records = None
     if run.train:
         train_records = build_records(data_root, specs, run.levels, run.train_langs, "train", with_labels=True)
         input_hashes["train"] = save_model_inputs(out_dir, "train", train_records)
+    if run.train and checkpoint is None:
         if run.replay and model_config["backend"] != "kev":
             if replay_file is None or not Path(replay_file).exists():
                 raise FileNotFoundError(
@@ -126,6 +142,7 @@ def execute(
         "model_config": model_config,
         "temperature": temperature,
         "checkpoint": str(checkpoint) if checkpoint else model_config["checkpoint"],
+        "resumed_from": resumed_from,
         "git_commit": _git_commit(),
         "git_dirty": _git_dirty(),
         "data_manifest": data_manifest(data_root),

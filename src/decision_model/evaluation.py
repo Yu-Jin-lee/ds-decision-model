@@ -11,12 +11,27 @@ from .formats import INVALID, TaskSpec, final_distributions
 from .metrics import stage_error, summarize
 
 
+def paired(records: list[dict[str, Any]], predictions: list[Prediction]) -> list[tuple[dict[str, Any], Prediction]]:
+    """Each record with its own prediction, by position.
+
+    Ids are unique only within a task: S4 and S5 rows built from the same keyword share
+    an id. A multi-task run (J*) holds both, so a lookup by id alone handed an S4 record
+    the S5 prediction (KeyError 's4_noul'). Every backend returns one prediction per
+    record in input order; this checks that instead of trusting ids to be global.
+    """
+    if len(records) != len(predictions):
+        raise ValueError(f"{len(predictions)} predictions for {len(records)} records")
+    for record, prediction in zip(records, predictions):
+        if prediction["id"] != record["id"]:
+            raise ValueError(f"prediction {prediction['id']!r} is out of order (expected {record['id']!r})")
+    return list(zip(records, predictions))
+
+
 def calibration_items(records: list[dict[str, Any]], predictions: list[Prediction]) -> list[tuple[list[float], int]]:
     """(scores, gold index) for every labelled question, for temperature fitting."""
-    by_id = {p["id"]: p for p in predictions}
     items = []
-    for record in records:
-        answers = by_id[record["id"]]["answers"]
+    for record, prediction in paired(records, predictions):
+        answers = prediction["answers"]
         for question_id, question in record["questions"].items():
             if "label" not in question:
                 continue
@@ -59,11 +74,10 @@ def score(
     temperature: float,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Per-record rows and per-cell metrics keyed ``task/lang/view``."""
-    by_id = {p["id"]: p for p in predictions}
     rows: list[dict[str, Any]] = []
-    for record in records:
+    for record, prediction in paired(records, predictions):
         spec = specs[record["task"]]
-        answers = calibrated_answers(by_id[record["id"]], temperature)
+        answers = calibrated_answers(prediction, temperature)
         views = final_distributions(spec, record["level"], record, answers)
         for view_name, distribution in views.items():
             rows.append(
@@ -102,11 +116,12 @@ def score(
 
     # Agreement between views of the same record (levels that train several formats together).
     agreement: dict[tuple[str, str], list[bool]] = defaultdict(list)
-    per_record: dict[str, list[str]] = defaultdict(list)
-    keys: dict[str, tuple[str, str]] = {}
+    # Keyed by (task, id): ids repeat across tasks (see paired()).
+    per_record: dict[tuple[str, str], list[str]] = defaultdict(list)
+    keys: dict[tuple[str, str], tuple[str, str]] = {}
     for row in rows:
-        per_record[row["id"]].append(row["prediction"])
-        keys[row["id"]] = (row["task"], row["lang"])
+        per_record[(row["task"], row["id"])].append(row["prediction"])
+        keys[(row["task"], row["id"])] = (row["task"], row["lang"])
     for record_id, predictions_of_record in per_record.items():
         if len(predictions_of_record) > 1:
             agreement[keys[record_id]].append(len(set(predictions_of_record)) == 1)
