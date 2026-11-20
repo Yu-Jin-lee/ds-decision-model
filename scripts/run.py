@@ -32,6 +32,8 @@ def main() -> None:
     parser.add_argument("--data-root", default=os.environ.get("SM_CHANNEL_DATA", "data"))
     parser.add_argument("--out-root", default=os.environ.get("SM_MODEL_DIR", "runs"))
     parser.add_argument("--replay-file", default=None, help="Kev-format JSONL for replay (non-Kev backends)")
+    parser.add_argument("--checkpoint", default=None,
+                        help="skip training and use this run's existing checkpoint (e.g. from a failed job)")
     parser.add_argument("--final", action="store_true", help="also score the locked test partition (once)")
     parser.add_argument("--list", action="store_true", help="print the run matrix and exit")
     parser.add_argument("--stage", type=int, action="append", help="with --list: only these stages")
@@ -57,7 +59,8 @@ def main() -> None:
     replay_file = Path(args.replay_file) if args.replay_file else None
     if replay_file is None and (Path(args.data_root) / "replay.jsonl").exists():
         replay_file = Path(args.data_root) / "replay.jsonl"
-    summary = execute(run, Path(args.data_root), Path(args.out_root), final=args.final, replay_file=replay_file)
+    summary = execute(run, Path(args.data_root), Path(args.out_root), final=args.final, replay_file=replay_file,
+                      checkpoint=Path(args.checkpoint) if args.checkpoint else None)
     print(json.dumps({k: summary[k] for k in ("temperature", "metrics_development")}, indent=2, ensure_ascii=False))
 
 

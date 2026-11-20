@@ -71,11 +71,60 @@ def main() -> None:
 
         shutil.rmtree(raw)
         os.environ["VLLM_MODEL_PATH"] = str(local)   # read by the backend in every run.py process
+    resume_root = None
+    if "--resume-from" in args:
+        resume_root = fetch_resume(args[args.index("--resume-from") + 1])
+        args = _drop(args, "--resume-from")
     if "--runs" in args:
-        run_batch(model, parse_runs(args[args.index("--runs") + 1]), _without(args, "--runs"))
+        run_batch(model, parse_runs(args[args.index("--runs") + 1]), _without(args, "--runs"), resume_root)
         return
+    if resume_root is not None:
+        group, seed = args[args.index("--group") + 1], args[args.index("--seed") + 1] if "--seed" in args else "0"
+        args = [*args, *resume_args(resume_root, f"{model}/{group}/s{seed}")]
     sh(sys.executable, str(REPO / "scripts" / "run.py"), *args)
     upload_outputs()
+
+
+def _drop(args: list[str], flag: str) -> list[str]:
+    """``args`` without ``flag`` and its value."""
+    i = args.index(flag)
+    return args[:i] + args[i + 2:]
+
+
+def fetch_resume(uri: str) -> Path:
+    """Download and unpack an earlier job's model.tar.gz (s3://... or a local path).
+
+    It holds that job's run folders ({model}/{group}/s{seed}/), including the
+    checkpoints of runs that trained but failed afterwards."""
+    import tarfile
+
+    root = Path(os.environ.get("RESUME_DIR", "/opt/ml/resume"))
+    root.mkdir(parents=True, exist_ok=True)
+    archive = Path(uri)
+    if uri.startswith("s3://"):
+        import boto3
+
+        bucket, _, key = uri.removeprefix("s3://").partition("/")
+        archive = root / "model.tar.gz"
+        print(f"+ download {uri}", flush=True)
+        boto3.client("s3").download_file(bucket, key, str(archive))
+    with tarfile.open(archive) as tar:
+        tar.extractall(root, filter="data")
+    if uri.startswith("s3://"):
+        archive.unlink()
+    return root
+
+
+def resume_args(resume_root: Path | None, run_id: str) -> list[str]:
+    """``--checkpoint DIR`` if the earlier job left a checkpoint for this run, else nothing (train as usual)."""
+    if resume_root is None:
+        return []
+    checkpoint = resume_root / run_id / "checkpoint" / "checkpoint"
+    if checkpoint.is_dir():
+        print(f"resume {run_id} from {checkpoint}", flush=True)
+        return ["--checkpoint", str(checkpoint)]
+    print(f"resume {run_id}: no checkpoint in the earlier job, training from the start", flush=True)
+    return []
 
 
 def parse_runs(value: str) -> list[tuple[str, int]]:
@@ -103,7 +152,7 @@ def _without(args: list[str], *flags: str) -> list[str]:
     return out
 
 
-def run_batch(model: str, runs: list[tuple[str, int]], extra: list[str]) -> None:
+def run_batch(model: str, runs: list[tuple[str, int]], extra: list[str], resume_root: Path | None = None) -> None:
     import shutil
 
     model_dir = Path(os.environ.get("SM_MODEL_DIR", "runs"))
@@ -112,7 +161,8 @@ def run_batch(model: str, runs: list[tuple[str, int]], extra: list[str]) -> None
         run_id = f"{model}/{group}/s{seed}"
         print(f"=== [{i}/{len(runs)}] {run_id}", flush=True)
         try:
-            sh(sys.executable, str(REPO / "scripts" / "run.py"), "--model", model, "--group", group, "--seed", str(seed), *extra)
+            sh(sys.executable, str(REPO / "scripts" / "run.py"), "--model", model, "--group", group, "--seed", str(seed),
+               *extra, *resume_args(resume_root, run_id))
         except subprocess.CalledProcessError as error:
             print(f"!!! {run_id} failed (exit {error.returncode}); continuing", flush=True)
             failed.append(run_id)

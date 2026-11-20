@@ -125,6 +125,10 @@ def main() -> None:
     parser.add_argument("--max-run-hours", type=int, default=12)
     parser.add_argument("--tag", action="append", default=[], help="extra/override tag key=value")
     parser.add_argument("--batch", action="store_true", help="run all selected runs in one job, one after another")
+    parser.add_argument(
+        "--resume-from", default=None,
+        help="S3 URI of an earlier job's model.tar.gz: runs whose checkpoint it holds skip training",
+    )
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -162,6 +166,8 @@ def main() -> None:
     def submit(name: str, hyperparameters: dict) -> str:
         from sagemaker.estimator import Estimator
 
+        if args.resume_from:
+            hyperparameters = {**hyperparameters, "resume-from": args.resume_from}
         max_run = args.max_run_hours * 3600
         estimator = Estimator(
             image_uri=args.image_uri,
