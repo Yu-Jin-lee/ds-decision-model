@@ -62,6 +62,7 @@ def batch_job_name(model: str, runs) -> str:
     """
     import hashlib
 
+    model = re.sub(r"[^a-zA-Z0-9-]", "-", model)   # job names allow letters, digits and hyphens only (chon-1.0-e4b)
     tokens: dict[str, list[str]] = {}
     for run in runs:
         prefix, level = _group_token(run.group)
