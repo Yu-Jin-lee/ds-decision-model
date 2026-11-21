@@ -110,6 +110,13 @@ python scripts/run.py --model kev-4b --group J-best --seed 0 --checkpoint <압�
 - 질문마다 별도 시퀀스로 판단합니다(Kev와 같고 Clef와 다름).
 - 입력이 `max_len`을 넘거나 선택지가 헤드 예산(`head_max_len`)에 안 들어가는 질문은 학습에서 빠지고, 평가에서는 균등 확률로 처리되며 `predictions_*.jsonl`의 `skipped`에 기록됩니다.
 
+**Chon** (`backends/chon.py`, `chon-1.0-e4b`)
+- 공개본(`ninhnv/chon-1.0-e4b`)은 Gemma 4 E4B 위의 LoRA 어댑터이고, 서빙 코드(`chon` 패키지)만 공개되어 학습 루프는 여기서 작성했습니다.
+- 새 LoRA를 붙이지 않고 공개 어댑터를 그대로 불러와 이어서 학습합니다(베이스는 bf16 고정, 어댑터는 fp32).
+- 질문은 `chon.serve`와 똑같이 chon의 `DecisionModel.encode`로 토큰화하고(같은 토큰 id인지 테스트로 확인), 답 위치의 선택지 글자 logit에 cross-entropy를 겁니다.
+- 결과는 공개본과 같은 패키지 형식(어댑터 + `chon_config.json`)으로 저장해 `chon.serve --model <checkpoint>`로 평가합니다. 공개본에 맞춰 둔 temperature·post-calibration·thinking은 빼고(temperature 1), 보정은 다른 모델과 같은 공통 보정만 씁니다.
+- lr·epoch·batch×accum은 Kev-4B와 같게 두었습니다. replay(J+R-*)는 지원하지 않습니다. `chon-1.0-e2b`는 여전히 B0만 돌립니다.
+
 **Kev** (`backends/kev.py`)
 - Kev 저장소의 `kev.train`과 `kev.serve`를 그대로 호출합니다. `KEV_DIR`(기본 `/opt/kev`)에 저장소가 있어야 합니다.
 - 평가는 보정 전 확률(`KEV_TEMPERATURE=1.0`)과 fp32 경로로 받고, 보정은 공통 코드에서 합니다.

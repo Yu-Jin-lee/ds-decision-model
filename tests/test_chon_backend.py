@@ -30,10 +30,11 @@ def test_configs_serve_one_pass_without_commit_band(name):
     assert command[command.index("--deadline") + 1] == "0"
 
 
-def test_training_is_refused():
-    backend = get_backend(load_model_config("chon-1.0-e4b"))
-    with pytest.raises(NotImplementedError, match="B0"):
-        backend.train([], Path("x"), 0)
+def test_e4b_trains_e2b_stays_b0_only():
+    """chon-1.0-e4b continues training its released adapter (tests/test_chon_train.py); e2b is still B0 only."""
+    assert load_model_config("chon-1.0-e4b")["trainable"] is True
+    assert load_model_config("chon-1.0-e4b")["train"]["lr"] == load_model_config("kev-4b")["train"]["lr"]
+    assert load_model_config("chon-1.0-e2b")["trainable"] is False
 
 
 def test_b0_formats_have_at_most_16_options():
@@ -83,9 +84,10 @@ def test_predict_parses_chon_answers(monkeypatch):
     assert [p["id"] for p in predictions] == ["kr:1", "kr:1"]
     assert math.isclose(math.exp(predictions[0]["answers"]["s4_noul"]["true"]), 0.8)
     assert set(predictions[1]["answers"]["s5_score"]) == {"0", "1", "2", "3", "4"}
-    with pytest.raises(ValueError):
-        with backend.predictor(Path("ckpt")):
-            pass
+    started = []
+    monkeypatch.setattr(chon.subprocess, "Popen", lambda command, **k: started.append(command) or FakeServer())
+    backend.predict(Path("ckpt"), records[:1])   # a fine-tuned package is served in place of the release
+    assert started[-1][started[-1].index("--model") + 1] == "ckpt"
 
 
 def test_b0_batch_job_name_is_valid_for_sagemaker():

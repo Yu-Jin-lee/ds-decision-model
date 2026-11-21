@@ -1,18 +1,33 @@
 # Chon-1.0-E4B (ninhnv/chon-1.0-e4b): a typed-decision LoRA adapter (~558 MB) on
 # google/gemma-4-E4B-it (about 4B effective parameters), served by the chon package over the
-# same /v1/systemone format as Kev. Evaluated as released only (B0 groups): no training recipe.
+# same /v1/systemone format as Kev. B0 is the release as is; training continues the released
+# adapter with our own loop (backends/chon.py), since the release ships no training code.
 # Model card: English and Vietnamese; ko/ja are outside what it was trained for.
 name: chon-1.0-e4b
 backend: chon
 checkpoint: ninhnv/chon-1.0-e4b
 base: google/gemma-4-E4B-it
 multilingual: false
-trainable: false
+trainable: true
 dtype: bfloat16              # card: one GPU with 24 GB+ for bf16
 
 # One forward pass per question, like Kev: no reasoning pass or second read for unsure
 # answers, no deadline, no yes/no commit band (it would snap P(yes) to 0.2/0.8).
 serve_args: [--no-think, --reread, "off", --deadline, "0", --noul-commit, "off"]
+
+# Training: continue the released LoRA (its own rank and targets) on the frozen bf16 base. Optimiser
+# settings follow Kev-4B's (lr, epochs, batch x accum) so the two are compared on the same budget.
+# Loss: cross-entropy over the option letters at the reply position, the read chon.serve does.
+train:
+  lr: 2.0e-5
+  epochs: 1
+  batch: 2                   # questions per micro-batch
+  accum: 4
+  warmup_ratio: 0.05
+  max_grad_norm: 1.0
+  checkpointing: 1
+  weights_dtype: bfloat16    # frozen base; the adapter trains in fp32 (PEFT upcasts it)
+  dtype: bf16                # autocast
 
 chon_repo: https://github.com/xoai/chon
 chon_ref: 455e7b95853364a575253f8d960c9b04b51fe050   # main on 2026-11-20 (chon 1.7.0)
