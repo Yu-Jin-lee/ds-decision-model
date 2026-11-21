@@ -77,3 +77,17 @@ groups:
     tasks: [s2, s4, s5]
     levels: selected
     replay: 0
+
+  # Language-only training (one train language, choice, no replay), evaluated in all three languages.
+  L-s2-ko: {stage: 2, optional: true, seeds: [0], tasks: [s2], levels: {s2: choice}, train_langs: [ko], replay: 0}
+  L-s2-ja: {stage: 2, optional: true, seeds: [0], tasks: [s2], levels: {s2: choice}, train_langs: [ja], replay: 0}
+  L-s2-en: {stage: 2, optional: true, seeds: [0], tasks: [s2], levels: {s2: choice}, train_langs: [en], replay: 0}
+  L-s4-ko: {stage: 2, optional: true, seeds: [0], tasks: [s4], levels: {s4: choice}, train_langs: [ko], replay: 0}
+  L-s4-ja: {stage: 2, optional: true, seeds: [0], tasks: [s4], levels: {s4: choice}, train_langs: [ja], replay: 0}
+  L-s4-en: {stage: 2, optional: true, seeds: [0], tasks: [s4], levels: {s4: choice}, train_langs: [en], replay: 0}
+  L-s5-ko: {stage: 2, optional: true, seeds: [0], tasks: [s5], levels: {s5: choice}, train_langs: [ko], replay: 0}
+  L-s5-ja: {stage: 2, optional: true, seeds: [0], tasks: [s5], levels: {s5: choice}, train_langs: [ja], replay: 0}
+  L-s5-en: {stage: 2, optional: true, seeds: [0], tasks: [s5], levels: {s5: choice}, train_langs: [en], replay: 0}
+
+  # The three tasks in one model with the formats picked in stage 1, all three languages, no replay.
+  J-best: {stage: 2, optional: true, seeds: [0], tasks: [s2, s4, s5], levels: {s2: choice, s4: both, s5: choice}, replay: 0}

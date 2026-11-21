@@ -1,0 +1,20 @@
+# Chon-1.0-E2B (ninhnv/chon-1.0-e2b): a typed-decision LoRA adapter (~387 MB) on
+# google/gemma-4-E2B-it (about 2B effective parameters), served by the chon package over the
+# same /v1/systemone format as Kev. Evaluated as released only (B0 groups): no training recipe.
+# Model card: English and Vietnamese; ko/ja are outside what it was trained for.
+name: chon-1.0-e2b
+backend: chon
+checkpoint: ninhnv/chon-1.0-e2b
+base: google/gemma-4-E2B-it
+multilingual: false
+trainable: false
+dtype: bfloat16              # card: one GPU with 16 GB+ for bf16
+
+# One forward pass per question, like Kev: no reasoning pass or second read for unsure
+# answers, no deadline, no yes/no commit band (it would snap P(yes) to 0.2/0.8).
+serve_args: [--no-think, --reread, "off", --deadline, "0", --noul-commit, "off"]
+
+chon_repo: https://github.com/xoai/chon
+chon_ref: 455e7b95853364a575253f8d960c9b04b51fe050   # main on 2026-11-20 (chon 1.7.0)
+instance: ml.g6e.xlarge
+volume_gb: 60

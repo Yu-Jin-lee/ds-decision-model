@@ -48,6 +48,8 @@ def main() -> None:
         from decision_model.backends.kev import uv_environment
 
         sh("uv", "sync", "--extra", "serve", cwd=kev_dir, env=uv_environment(kev_dir))
+    elif config["backend"] == "chon":
+        sh(sys.executable, "-m", "pip", "install", "-q", f"chon[serve] @ git+{config['chon_repo']}@{config['chon_ref']}")
     elif config["backend"] == "prompt_llm":
         # vLLM brings its own torch/CUDA wheels: install it in a separate venv, never the image's Python.
         from decision_model.backends.prompt_llm import DEFAULT_VLLM_VENV, _clean_env
