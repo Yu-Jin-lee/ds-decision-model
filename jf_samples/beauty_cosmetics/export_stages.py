@@ -1,17 +1,12 @@
-"""JF 배치 result.json.gz → 단계별(S1~S6) 키워드 단위 JSONL.gz.
+"""JF run result.json.gz → 단계별(S1~S6) 키워드 단위 JSONL.gz.
 
-사용: python export_stages.py <출력 폴더>  (jf 서버에서, /data/prefect-results 읽기 권한 필요)
+사용: python export_stages.py <출력 폴더> kr=<job_id> jp=<job_id> us=<job_id>
+(jf 서버에서, /data/prefect-results 읽기 권한 필요)
 """
 import gzip, json, sys
 from pathlib import Path
 
-JOBS = {
-    "kr": "254afd99-68f5-4983-9725-8b7495732fa6",
-    "jp": "ef8f8a56-d45e-4776-92d1-b7dfcc3f9f6f",
-    "us": "a397ec90-6692-423a-a02f-5cc703a9ecbb",
-}
 ROOT = Path("/data/prefect-results/jf")
-out_root = Path(sys.argv[1])
 
 
 def topic_index(data):
@@ -36,14 +31,31 @@ def write(path, rows):
     return len(rows)
 
 
-summary = {}
-for country, job_id in JOBS.items():
+def track(v):
+    if v.get("tn") is not None:
+        return "span"
+    src = v.get("src") or []
+    if "CEP" in src:
+        return "cep"
+    if "Seed" in src:
+        return "seed"
+    return None
+
+
+def export(country, job_id, out_root):
     d = json.load(gzip.open(ROOT / job_id / "result.json.gz"))
     step_meta = {n: json.load(open(ROOT / job_id / f"{n}.meta.json")) for n in range(1, 7)}
+    errors = {n: step_meta[n]["stats"].get("error", 0) for n in (3, 4, 5)}
+    if any(errors.values()):
+        # S3·S4 오류 키워드는 cdj_results에서 빠져, 아래 relevant 계산이 틀어진다
+        raise SystemExit(f"{country} {job_id}: S3~S5 오류가 있다 {errors}")
     out = out_root / country
     out.mkdir(parents=True, exist_ok=True)
     km = d["keyword_meta"]
     cdj = d["cdj_results"]
+    # S3 입력 = S2 relevant_keywords. S3~S5 오류가 없으면 cdj_results 키워드 집합과 같다.
+    # keyword_meta.rel은 같은 키워드가 CEP에서 두 번 판정되면 마지막 판정만 남아 이 집합과 어긋난다.
+    relevant = {r["keyword"] for r in cdj}
     method = {(st, r["keyword"]): r.get("method") for st, p in d["data"].items() for r in p.get("keyword_results") or []}
     topics = topic_index(d["data"])
 
@@ -52,7 +64,7 @@ for country, job_id in JOBS.items():
         {"keyword": k, "volume": v.get("v"), "seeds": v.get("sd", []), "sources": v.get("src", []),
          "graph_hops": v.get("hp")} for k, v in km.items()])
     counts["s2_relevance"] = write(out / "s2_relevance.jsonl.gz", [
-        {"keyword": k, "relevant": v.get("rel"), **({"type_num": v["tn"]} if "tn" in v else {})}
+        {"keyword": k, "track": track(v), "relevant": k in relevant, "type_num": v.get("tn")}
         for k, v in km.items()])
     counts["s3_attributes"] = write(out / "s3_attributes.jsonl.gz", [
         {"keyword": r["keyword"], "target": r["target"], "intent": r["intent"], "site": r["site"]} for r in cdj])
@@ -75,5 +87,10 @@ for country, job_id in JOBS.items():
                       for n, m in step_meta.items()},
             "files": counts}
     (out / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
-    summary[country] = counts
-print(json.dumps(summary, indent=1))
+    return counts
+
+
+if __name__ == "__main__":
+    out_root = Path(sys.argv[1])
+    jobs = dict(a.split("=", 1) for a in sys.argv[2:])
+    print(json.dumps({c: export(c, j, out_root) for c, j in jobs.items()}, indent=1))

@@ -1,0 +1,1283 @@
+{
+  "job_id": "06ab26ab-bcce-4911-a18e-4bcbf9922684",
+  "country": "jp",
+  "queries": [
+    "wakemakeファンデーション",
+    "wakemake",
+    "wakemake アイシャドウ",
+    "wakemake リップ",
+    "wakemake クッション ファンデーション"
+  ],
+  "input_mode": "seed",
+  "started_at": "2026-11-10T04:09:51.265445+00:00",
+  "volume_month": "2026-09",
+  "graph_build_date": "2026-11-09",
+  "status": "DONE",
+  "finished_at": "2026-11-10T04:11:44.255244+00:00",
+  "industry": "ビューティー／化粧品",
+  "category_2depth": [
+    "韓国コスメのファンデーション"
+  ],
+  "steps": {
+    "1": {
+      "name": "S1-키워드 확장",
+      "finished_at": "2026-11-10T04:10:18.890431+00:00",
+      "stats": {
+        "category_1depth": "ビューティー／化粧品",
+        "category_2depth": [
+          "韓国コスメのファンデーション"
+        ],
+        "seeds": 5,
+        "substeps": {
+          "1": null,
+          "2": 34,
+          "3": 317,
+          "4": 2050,
+          "5": 2287,
+          "6": 2247
+        },
+        "keywords": 2247,
+        "serp_snippets": 2247,
+        "keyword_elapsed_count": 0,
+        "volume_month": "2026-09",
+        "graph_build_date": "2026-11-09",
+        "llm_stats": {
+          "calls": 5,
+          "retries": 0,
+          "failures": 0,
+          "successes": 5,
+          "validation_attempts": 5,
+          "validation_failures": 0,
+          "retries_by_reason": {},
+          "failures_by_reason": {},
+          "validation_failures_by_reason": {},
+          "finish_by_reason": {
+            "stop": 5
+          },
+          "prompt_tokens": 5512,
+          "completion_tokens": 470,
+          "cached_tokens": 2976,
+          "created_cache_tokens": 2464,
+          "usage_samples": 5,
+          "llm_elapsed_sec": 6.098,
+          "elapsed_samples": 5,
+          "avg_call_sec": 1.22
+        },
+        "llm_failures": {
+          "summary": {
+            "stored": 0,
+            "truncated": false,
+            "by_reason": {},
+            "by_use_case": {}
+          }
+        },
+        "use_case_concurrency": {
+          "jobs": 1,
+          "use_cases": {
+            "s1-md": 1,
+            "s1-cep": 64
+          }
+        },
+        "llm_calls": {
+          "summary": {
+            "stored": 5,
+            "errors": 0,
+            "by_use_case": {
+              "s1-cep": {
+                "calls": 5,
+                "input_tokens": 5512,
+                "output_tokens": 470,
+                "cached_tokens": 2976,
+                "created_cache_tokens": 2464,
+                "elapsed_sec": 6.098
+              }
+            }
+          },
+          "dir": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/1",
+          "paths": {
+            "s1-cep": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/1/s1-cep.txt.gz"
+          },
+          "stored": 5
+        }
+      }
+    },
+    "2": {
+      "name": "S2-유무관 분류",
+      "finished_at": "2026-11-10T04:10:47.664228+00:00",
+      "stats": {
+        "seed_passthrough": 0,
+        "cep": {
+          "total": 336,
+          "relevant": 158,
+          "irrelevant": 178,
+          "unknown": 0,
+          "batches": 336,
+          "elapsed_sec": 2.42
+        },
+        "span": {
+          "total": 1961,
+          "relevant": 726,
+          "irrelevant": 1235,
+          "unknown": 0,
+          "batches": 1961,
+          "elapsed_sec": 24.55
+        },
+        "relevant_total": 870,
+        "keyword_results_count": 2297,
+        "llm_stats": {
+          "calls": 2297,
+          "retries": 0,
+          "failures": 0,
+          "successes": 2297,
+          "validation_attempts": 2297,
+          "validation_failures": 0,
+          "retries_by_reason": {},
+          "failures_by_reason": {},
+          "validation_failures_by_reason": {},
+          "finish_by_reason": {
+            "stop": 2297
+          },
+          "prompt_tokens": 4196300,
+          "completion_tokens": 9989,
+          "cached_tokens": 3616192,
+          "created_cache_tokens": 543840,
+          "usage_samples": 2297,
+          "llm_elapsed_sec": 1697.991,
+          "elapsed_samples": 2297,
+          "avg_call_sec": 0.739
+        },
+        "llm_failures": {
+          "summary": {
+            "stored": 0,
+            "truncated": false,
+            "by_reason": {},
+            "by_use_case": {}
+          }
+        },
+        "use_case_concurrency": {
+          "jobs": 1,
+          "use_cases": {
+            "s2-cep": 64,
+            "s2-span": 64
+          }
+        },
+        "llm_calls": {
+          "summary": {
+            "stored": 2297,
+            "errors": 0,
+            "by_use_case": {
+              "s2-cep": {
+                "calls": 336,
+                "input_tokens": 210133,
+                "output_tokens": 1803,
+                "cached_tokens": 162784,
+                "created_cache_tokens": 41984,
+                "elapsed_sec": 144.461
+              },
+              "s2-span": {
+                "calls": 1961,
+                "input_tokens": 3986167,
+                "output_tokens": 8186,
+                "cached_tokens": 3453408,
+                "created_cache_tokens": 501856,
+                "elapsed_sec": 1553.53
+              }
+            }
+          },
+          "dir": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/2",
+          "paths": {
+            "s2-cep": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/2/s2-cep.txt.gz",
+            "s2-span": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/2/s2-span.txt.gz"
+          },
+          "stored": 2297
+        },
+        "metrics": {
+          "quality": {
+            "classified": 2297,
+            "relevant": 884,
+            "relevant_ratio": 0.3848,
+            "cep_relevant_ratio": 0.4702,
+            "span_relevant_ratio": 0.3702
+          }
+        }
+      }
+    },
+    "3": {
+      "name": "S3-검색어 속성 추출",
+      "finished_at": "2026-11-10T04:11:02.339921+00:00",
+      "stats": {
+        "total": 870,
+        "success": 870,
+        "error": 0,
+        "serp_hit": 870,
+        "elapsed_sec": 12.57,
+        "llm_stats": {
+          "calls": 871,
+          "retries": 1,
+          "failures": 0,
+          "successes": 870,
+          "validation_attempts": 871,
+          "validation_failures": 1,
+          "retries_by_reason": {
+            "validation": 1
+          },
+          "failures_by_reason": {},
+          "validation_failures_by_reason": {
+            "UnknownTokenError": 1
+          },
+          "finish_by_reason": {
+            "stop": 871
+          },
+          "prompt_tokens": 1079567,
+          "completion_tokens": 10006,
+          "cached_tokens": 862272,
+          "created_cache_tokens": 203968,
+          "usage_samples": 871,
+          "llm_elapsed_sec": 788.277,
+          "elapsed_samples": 870,
+          "avg_call_sec": 0.906
+        },
+        "llm_failures": {
+          "summary": {
+            "stored": 0,
+            "truncated": false,
+            "by_reason": {},
+            "by_use_case": {}
+          }
+        },
+        "use_case_concurrency": {
+          "jobs": 1,
+          "use_cases": {
+            "s3-tok": 64
+          }
+        },
+        "llm_calls": {
+          "summary": {
+            "stored": 870,
+            "errors": 0,
+            "by_use_case": {
+              "s3-tok": {
+                "calls": 870,
+                "input_tokens": 1079567,
+                "output_tokens": 10006,
+                "cached_tokens": 862272,
+                "created_cache_tokens": 203968,
+                "elapsed_sec": 788.277
+              }
+            }
+          },
+          "dir": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/3",
+          "paths": {
+            "s3-tok": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/3/s3-tok.txt.gz"
+          },
+          "stored": 870
+        },
+        "metrics": {
+          "quality": {
+            "rows": 870,
+            "multi_attr_rows": 0,
+            "multi_attr_row_ratio": 0.0,
+            "tokens": 573,
+            "multi_attr_tokens": 34,
+            "multi_attr_token_ratio": 0.0593,
+            "multi_attr_examples": [
+              "韓国(Target 26 · Intent 19)",
+              "新大久保(Target 7 · Intent 5)",
+              "oliveyoung(Site 5 · Target 4)",
+              "ロフト(Site 10 · Target 3)",
+              "メイク(Target 14 · Intent 2)"
+            ],
+            "site_rows": 54,
+            "site_leading_rows": 1,
+            "site_leading_ratio": 0.0185,
+            "site_leading_examples": [
+              "zozo wakemake"
+            ]
+          }
+        }
+      }
+    },
+    "4": {
+      "name": "S4-브랜드/제네릭 분류",
+      "finished_at": "2026-11-10T04:11:19.202152+00:00",
+      "stats": {
+        "total": 870,
+        "success": 870,
+        "error": 0,
+        "serp_hit": 870,
+        "elapsed_sec": 10.88,
+        "llm_stats": {
+          "calls": 947,
+          "retries": 0,
+          "failures": 0,
+          "successes": 947,
+          "validation_attempts": 947,
+          "validation_failures": 0,
+          "retries_by_reason": {},
+          "failures_by_reason": {},
+          "validation_failures_by_reason": {},
+          "finish_by_reason": {
+            "stop": 947
+          },
+          "prompt_tokens": 858910,
+          "completion_tokens": 5091,
+          "cached_tokens": 592800,
+          "created_cache_tokens": 251712,
+          "usage_samples": 947,
+          "llm_elapsed_sec": 727.966,
+          "elapsed_samples": 947,
+          "avg_call_sec": 0.769
+        },
+        "llm_failures": {
+          "summary": {
+            "stored": 0,
+            "truncated": false,
+            "by_reason": {},
+            "by_use_case": {}
+          }
+        },
+        "use_case_concurrency": {
+          "jobs": 1,
+          "use_cases": {
+            "s4-bg": 64,
+            "s4b-grp": 1,
+            "s4b-asg": 64
+          }
+        },
+        "llm_calls": {
+          "summary": {
+            "stored": 947,
+            "errors": 0,
+            "by_use_case": {
+              "s4-bg": {
+                "calls": 870,
+                "input_tokens": 799169,
+                "output_tokens": 4900,
+                "cached_tokens": 557280,
+                "created_cache_tokens": 228704,
+                "elapsed_sec": 679.717
+              },
+              "s4b-asg": {
+                "calls": 76,
+                "input_tokens": 58299,
+                "output_tokens": 152,
+                "cached_tokens": 35520,
+                "created_cache_tokens": 21568,
+                "elapsed_sec": 47.818
+              },
+              "s4b-grp": {
+                "calls": 1,
+                "input_tokens": 1442,
+                "output_tokens": 39,
+                "cached_tokens": 0,
+                "created_cache_tokens": 1440,
+                "elapsed_sec": 0.431
+              }
+            }
+          },
+          "dir": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/4",
+          "paths": {
+            "s4-bg": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/4/s4-bg.txt.gz",
+            "s4b-asg": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/4/s4b-asg.txt.gz",
+            "s4b-grp": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/4/s4b-grp.txt.gz"
+          },
+          "stored": 947
+        }
+      }
+    },
+    "5": {
+      "name": "S5-CDJ 단계 분류",
+      "finished_at": "2026-11-10T04:11:31.597314+00:00",
+      "stats": {
+        "total": 870,
+        "success": 870,
+        "error": 0,
+        "serp_hit": 870,
+        "elapsed_sec": 9.7,
+        "llm_stats": {
+          "calls": 870,
+          "retries": 0,
+          "failures": 0,
+          "successes": 870,
+          "validation_attempts": 870,
+          "validation_failures": 0,
+          "retries_by_reason": {},
+          "failures_by_reason": {},
+          "validation_failures_by_reason": {},
+          "finish_by_reason": {
+            "stop": 870
+          },
+          "prompt_tokens": 880179,
+          "completion_tokens": 1740,
+          "cached_tokens": 635296,
+          "created_cache_tokens": 231456,
+          "usage_samples": 870,
+          "llm_elapsed_sec": 596.845,
+          "elapsed_samples": 870,
+          "avg_call_sec": 0.686
+        },
+        "llm_failures": {
+          "summary": {
+            "stored": 0,
+            "truncated": false,
+            "by_reason": {},
+            "by_use_case": {}
+          }
+        },
+        "use_case_concurrency": {
+          "jobs": 1,
+          "use_cases": {
+            "s5-cdj": 64
+          }
+        },
+        "llm_calls": {
+          "summary": {
+            "stored": 870,
+            "errors": 0,
+            "by_use_case": {
+              "s5-cdj": {
+                "calls": 870,
+                "input_tokens": 880179,
+                "output_tokens": 1740,
+                "cached_tokens": 635296,
+                "created_cache_tokens": 231456,
+                "elapsed_sec": 596.845
+              }
+            }
+          },
+          "dir": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/5",
+          "paths": {
+            "s5-cdj": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/5/s5-cdj.txt.gz"
+          },
+          "stored": 870
+        },
+        "metrics": {
+          "quality": {
+            "rows": 870,
+            "other_rows": 7,
+            "other_ratio": 0.008,
+            "intent_groups": 65,
+            "intent_split_groups": 7,
+            "intent_split_ratio": 0.1077,
+            "intent_split_examples": [
+              "wakemake ウォーター ベルベット カバーファンデーション 色選び(Browsing 10) / ブリーブリークッションファンデ 色選び(Experience 7)",
+              "化粧 境目(Initial Exploration 1) / メイク 境目(Own & Service 1)",
+              "qoo10 wakemake official(Confirmation 1) / wakemake official(Browsing 1)",
+              "tirtir クッションファンデ肌荒れした(Own & Service 1) / ティルティル 肌荒れ した(Experience 1)",
+              "wakemake キティ セット(Browsing 1) / ウェイクメイク キティ セット(Confirmation 1)"
+            ],
+            "target_intent_groups": 2,
+            "target_intent_split_groups": 0,
+            "target_intent_split_ratio": 0.0,
+            "target_intent_split_examples": [],
+            "same_attrs_groups": 2,
+            "same_attrs_split_groups": 0,
+            "same_attrs_split_ratio": 0.0,
+            "same_attrs_split_examples": []
+          }
+        }
+      }
+    },
+    "6": {
+      "name": "S6-토픽 클러스터링",
+      "finished_at": "2026-11-10T04:11:43.866763+00:00",
+      "stats": {
+        "stages": [
+          "browsing",
+          "confirmation",
+          "experience",
+          "initial_exploration",
+          "own_and_service"
+        ],
+        "topics": {
+          "initial_exploration": {
+            "d1_topics": 10,
+            "max_depth": 3,
+            "assigned": 171,
+            "unassigned": 0,
+            "roots": [
+              {
+                "label": "おすすめ",
+                "keywords": 18
+              },
+              {
+                "label": "色選び",
+                "keywords": 23
+              },
+              {
+                "label": "使い方とコツ",
+                "keywords": 26
+              },
+              {
+                "label": "肌悩みと効果",
+                "keywords": 39
+              },
+              {
+                "label": "成分と安全性",
+                "keywords": 14
+              },
+              {
+                "label": "製品情報",
+                "keywords": 20
+              },
+              {
+                "label": "比較",
+                "keywords": 4
+              },
+              {
+                "label": "口コミと評判",
+                "keywords": 9
+              },
+              {
+                "label": "価格と購入",
+                "keywords": 4
+              },
+              {
+                "label": "トレンド",
+                "keywords": 14
+              }
+            ]
+          },
+          "browsing": {
+            "d1_topics": 9,
+            "max_depth": 4,
+            "assigned": 380,
+            "unassigned": 0,
+            "roots": [
+              {
+                "label": "色と選び方",
+                "keywords": 38
+              },
+              {
+                "label": "成分と安全性",
+                "keywords": 18
+              },
+              {
+                "label": "ブランド情報",
+                "keywords": 53
+              },
+              {
+                "label": "製品の種類",
+                "keywords": 216
+              },
+              {
+                "label": "最新情報とイベント",
+                "keywords": 24
+              },
+              {
+                "label": "公式サイト",
+                "keywords": 10
+              },
+              {
+                "label": "使い方と読み方",
+                "keywords": 2
+              },
+              {
+                "label": "国や産地",
+                "keywords": 15
+              },
+              {
+                "label": "その他",
+                "keywords": 4
+              }
+            ]
+          },
+          "experience": {
+            "d1_topics": 10,
+            "max_depth": 3,
+            "assigned": 85,
+            "unassigned": 0,
+            "roots": [
+              {
+                "label": "口コミと評判",
+                "keywords": 39
+              },
+              {
+                "label": "選び方",
+                "keywords": 8
+              },
+              {
+                "label": "比較",
+                "keywords": 4
+              },
+              {
+                "label": "おすすめ",
+                "keywords": 10
+              },
+              {
+                "label": "価格とコスパ",
+                "keywords": 2
+              },
+              {
+                "label": "安全性とリスク",
+                "keywords": 5
+              },
+              {
+                "label": "トレンド",
+                "keywords": 7
+              },
+              {
+                "label": "美容家",
+                "keywords": 4
+              },
+              {
+                "label": "肌質と属性",
+                "keywords": 4
+              },
+              {
+                "label": "その他",
+                "keywords": 2
+              }
+            ]
+          },
+          "confirmation": {
+            "d1_topics": 8,
+            "max_depth": 3,
+            "assigned": 182,
+            "unassigned": 0,
+            "roots": [
+              {
+                "label": "販売店",
+                "keywords": 76
+              },
+              {
+                "label": "店舗情報",
+                "keywords": 43
+              },
+              {
+                "label": "価格",
+                "keywords": 6
+              },
+              {
+                "label": "発売日",
+                "keywords": 6
+              },
+              {
+                "label": "特典",
+                "keywords": 4
+              },
+              {
+                "label": "混雑状況",
+                "keywords": 2
+              },
+              {
+                "label": "通販",
+                "keywords": 44
+              },
+              {
+                "label": "その他",
+                "keywords": 1
+              }
+            ]
+          },
+          "own_and_service": {
+            "d1_topics": 6,
+            "max_depth": 2,
+            "assigned": 45,
+            "unassigned": 0,
+            "roots": [
+              {
+                "label": "使い方",
+                "keywords": 18
+              },
+              {
+                "label": "肌トラブル",
+                "keywords": 9
+              },
+              {
+                "label": "乾燥と質感",
+                "keywords": 7
+              },
+              {
+                "label": "塗り方とコツ",
+                "keywords": 5
+              },
+              {
+                "label": "色と仕上がり",
+                "keywords": 5
+              },
+              {
+                "label": "製品情報",
+                "keywords": 1
+              }
+            ]
+          }
+        },
+        "skipped_small": {},
+        "skipped_non_cdj": {
+          "other": 7
+        },
+        "concurrency": {
+          "sllm_concurrency": 64,
+          "sllm_assign_concurrency": 64
+        },
+        "llm_stats": {
+          "browsing": {
+            "calls": 917,
+            "retries": 0,
+            "failures": 0,
+            "successes": 917,
+            "validation_attempts": 917,
+            "validation_failures": 0,
+            "retries_by_reason": {},
+            "failures_by_reason": {},
+            "validation_failures_by_reason": {},
+            "finish_by_reason": {
+              "stop": 917
+            },
+            "prompt_tokens": 200434,
+            "completion_tokens": 2598,
+            "cached_tokens": 135712,
+            "created_cache_tokens": 49152,
+            "usage_samples": 917,
+            "llm_elapsed_sec": 223.541,
+            "elapsed_samples": 917,
+            "avg_call_sec": 0.244
+          },
+          "confirmation": {
+            "calls": 235,
+            "retries": 0,
+            "failures": 0,
+            "successes": 235,
+            "validation_attempts": 235,
+            "validation_failures": 0,
+            "retries_by_reason": {},
+            "failures_by_reason": {},
+            "validation_failures_by_reason": {},
+            "finish_by_reason": {
+              "stop": 235
+            },
+            "prompt_tokens": 51612,
+            "completion_tokens": 732,
+            "cached_tokens": 30368,
+            "created_cache_tokens": 17632,
+            "usage_samples": 235,
+            "llm_elapsed_sec": 50.738,
+            "elapsed_samples": 235,
+            "avg_call_sec": 0.216
+          },
+          "experience": {
+            "calls": 136,
+            "retries": 0,
+            "failures": 0,
+            "successes": 136,
+            "validation_attempts": 136,
+            "validation_failures": 0,
+            "retries_by_reason": {},
+            "failures_by_reason": {},
+            "validation_failures_by_reason": {},
+            "finish_by_reason": {
+              "stop": 136
+            },
+            "prompt_tokens": 30482,
+            "completion_tokens": 416,
+            "cached_tokens": 21984,
+            "created_cache_tokens": 5984,
+            "usage_samples": 136,
+            "llm_elapsed_sec": 37.611,
+            "elapsed_samples": 136,
+            "avg_call_sec": 0.277
+          },
+          "initial_exploration": {
+            "calls": 346,
+            "retries": 1,
+            "failures": 0,
+            "successes": 345,
+            "validation_attempts": 346,
+            "validation_failures": 1,
+            "retries_by_reason": {
+              "validation": 1
+            },
+            "failures_by_reason": {},
+            "validation_failures_by_reason": {
+              "PathRepeatError": 1
+            },
+            "finish_by_reason": {
+              "stop": 346
+            },
+            "prompt_tokens": 76051,
+            "completion_tokens": 1106,
+            "cached_tokens": 53984,
+            "created_cache_tokens": 15776,
+            "usage_samples": 346,
+            "llm_elapsed_sec": 83.337,
+            "elapsed_samples": 345,
+            "avg_call_sec": 0.242
+          },
+          "own_and_service": {
+            "calls": 57,
+            "retries": 0,
+            "failures": 0,
+            "successes": 57,
+            "validation_attempts": 57,
+            "validation_failures": 0,
+            "retries_by_reason": {},
+            "failures_by_reason": {},
+            "validation_failures_by_reason": {},
+            "finish_by_reason": {
+              "stop": 57
+            },
+            "prompt_tokens": 11353,
+            "completion_tokens": 175,
+            "cached_tokens": 6912,
+            "created_cache_tokens": 3776,
+            "usage_samples": 57,
+            "llm_elapsed_sec": 10.571,
+            "elapsed_samples": 57,
+            "avg_call_sec": 0.185
+          }
+        },
+        "llm_calls": {
+          "browsing": {
+            "summary": {
+              "stored": 917,
+              "errors": 0,
+              "by_use_case": {
+                "s6-c1-dir": {
+                  "calls": 1,
+                  "input_tokens": 648,
+                  "output_tokens": 32,
+                  "cached_tokens": 0,
+                  "created_cache_tokens": 640,
+                  "elapsed_sec": 0.894
+                },
+                "s6-c1-rs": {
+                  "calls": 49,
+                  "input_tokens": 8908,
+                  "output_tokens": 113,
+                  "cached_tokens": 7712,
+                  "created_cache_tokens": 128,
+                  "elapsed_sec": 16.127
+                },
+                "s6-c2-asg": {
+                  "calls": 271,
+                  "input_tokens": 52855,
+                  "output_tokens": 549,
+                  "cached_tokens": 43232,
+                  "created_cache_tokens": 6080,
+                  "elapsed_sec": 63.475
+                },
+                "s6-c3-jdg": {
+                  "calls": 6,
+                  "input_tokens": 6802,
+                  "output_tokens": 224,
+                  "cached_tokens": 768,
+                  "created_cache_tokens": 5920,
+                  "elapsed_sec": 8.142
+                },
+                "s6-c4-asg": {
+                  "calls": 546,
+                  "input_tokens": 100928,
+                  "output_tokens": 1133,
+                  "cached_tokens": 72384,
+                  "created_cache_tokens": 18496,
+                  "elapsed_sec": 119.456
+                },
+                "s6-c4-gen": {
+                  "calls": 11,
+                  "input_tokens": 16484,
+                  "output_tokens": 174,
+                  "cached_tokens": 6688,
+                  "created_cache_tokens": 9632,
+                  "elapsed_sec": 5.568
+                },
+                "s6-c4-jdg": {
+                  "calls": 9,
+                  "input_tokens": 9232,
+                  "output_tokens": 321,
+                  "cached_tokens": 1152,
+                  "created_cache_tokens": 7904,
+                  "elapsed_sec": 8.064
+                },
+                "s6-c5-rs": {
+                  "calls": 24,
+                  "input_tokens": 4577,
+                  "output_tokens": 52,
+                  "cached_tokens": 3776,
+                  "created_cache_tokens": 352,
+                  "elapsed_sec": 1.814
+                }
+              }
+            },
+            "dir": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-browsing",
+            "paths": {
+              "s6-c1-dir": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-browsing/s6-c1-dir.txt.gz",
+              "s6-c1-rs": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-browsing/s6-c1-rs.txt.gz",
+              "s6-c2-asg": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-browsing/s6-c2-asg.txt.gz",
+              "s6-c3-jdg": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-browsing/s6-c3-jdg.txt.gz",
+              "s6-c4-asg": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-browsing/s6-c4-asg.txt.gz",
+              "s6-c4-gen": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-browsing/s6-c4-gen.txt.gz",
+              "s6-c4-jdg": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-browsing/s6-c4-jdg.txt.gz",
+              "s6-c5-rs": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-browsing/s6-c5-rs.txt.gz"
+            },
+            "stored": 917
+          },
+          "confirmation": {
+            "summary": {
+              "stored": 235,
+              "errors": 0,
+              "by_use_case": {
+                "s6-c1-dir": {
+                  "calls": 1,
+                  "input_tokens": 760,
+                  "output_tokens": 19,
+                  "cached_tokens": 0,
+                  "created_cache_tokens": 736,
+                  "elapsed_sec": 0.349
+                },
+                "s6-c1-rs": {
+                  "calls": 61,
+                  "input_tokens": 10259,
+                  "output_tokens": 139,
+                  "cached_tokens": 7584,
+                  "created_cache_tokens": 2176,
+                  "elapsed_sec": 9.517
+                },
+                "s6-c2-asg": {
+                  "calls": 29,
+                  "input_tokens": 5100,
+                  "output_tokens": 58,
+                  "cached_tokens": 3456,
+                  "created_cache_tokens": 1184,
+                  "elapsed_sec": 8.712
+                },
+                "s6-c3-jdg": {
+                  "calls": 3,
+                  "input_tokens": 3962,
+                  "output_tokens": 101,
+                  "cached_tokens": 128,
+                  "created_cache_tokens": 3808,
+                  "elapsed_sec": 3.627
+                },
+                "s6-c4-asg": {
+                  "calls": 119,
+                  "input_tokens": 22150,
+                  "output_tokens": 249,
+                  "cached_tokens": 15616,
+                  "created_cache_tokens": 4288,
+                  "elapsed_sec": 20.215
+                },
+                "s6-c4-gen": {
+                  "calls": 3,
+                  "input_tokens": 4281,
+                  "output_tokens": 55,
+                  "cached_tokens": 1216,
+                  "created_cache_tokens": 3008,
+                  "elapsed_sec": 1.872
+                },
+                "s6-c4-jdg": {
+                  "calls": 3,
+                  "input_tokens": 2290,
+                  "output_tokens": 78,
+                  "cached_tokens": 384,
+                  "created_cache_tokens": 1856,
+                  "elapsed_sec": 2.574
+                },
+                "s6-c5-rs": {
+                  "calls": 16,
+                  "input_tokens": 2810,
+                  "output_tokens": 33,
+                  "cached_tokens": 1984,
+                  "created_cache_tokens": 576,
+                  "elapsed_sec": 3.873
+                }
+              }
+            },
+            "dir": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-confirmation",
+            "paths": {
+              "s6-c1-dir": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-confirmation/s6-c1-dir.txt.gz",
+              "s6-c1-rs": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-confirmation/s6-c1-rs.txt.gz",
+              "s6-c2-asg": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-confirmation/s6-c2-asg.txt.gz",
+              "s6-c3-jdg": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-confirmation/s6-c3-jdg.txt.gz",
+              "s6-c4-asg": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-confirmation/s6-c4-asg.txt.gz",
+              "s6-c4-gen": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-confirmation/s6-c4-gen.txt.gz",
+              "s6-c4-jdg": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-confirmation/s6-c4-jdg.txt.gz",
+              "s6-c5-rs": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-confirmation/s6-c5-rs.txt.gz"
+            },
+            "stored": 235
+          },
+          "experience": {
+            "summary": {
+              "stored": 136,
+              "errors": 0,
+              "by_use_case": {
+                "s6-c1-dir": {
+                  "calls": 1,
+                  "input_tokens": 621,
+                  "output_tokens": 30,
+                  "cached_tokens": 256,
+                  "created_cache_tokens": 352,
+                  "elapsed_sec": 0.577
+                },
+                "s6-c1-rs": {
+                  "calls": 42,
+                  "input_tokens": 7825,
+                  "output_tokens": 95,
+                  "cached_tokens": 6592,
+                  "created_cache_tokens": 128,
+                  "elapsed_sec": 8.923
+                },
+                "s6-c2-asg": {
+                  "calls": 14,
+                  "input_tokens": 2755,
+                  "output_tokens": 30,
+                  "cached_tokens": 2112,
+                  "created_cache_tokens": 544,
+                  "elapsed_sec": 4.49
+                },
+                "s6-c3-jdg": {
+                  "calls": 1,
+                  "input_tokens": 1048,
+                  "output_tokens": 32,
+                  "cached_tokens": 128,
+                  "created_cache_tokens": 896,
+                  "elapsed_sec": 1.29
+                },
+                "s6-c4-asg": {
+                  "calls": 65,
+                  "input_tokens": 12426,
+                  "output_tokens": 140,
+                  "cached_tokens": 9952,
+                  "created_cache_tokens": 1376,
+                  "elapsed_sec": 17.103
+                },
+                "s6-c4-gen": {
+                  "calls": 2,
+                  "input_tokens": 2928,
+                  "output_tokens": 37,
+                  "cached_tokens": 1216,
+                  "created_cache_tokens": 1696,
+                  "elapsed_sec": 1.286
+                },
+                "s6-c4-jdg": {
+                  "calls": 1,
+                  "input_tokens": 890,
+                  "output_tokens": 30,
+                  "cached_tokens": 128,
+                  "created_cache_tokens": 736,
+                  "elapsed_sec": 1.076
+                },
+                "s6-c5-rs": {
+                  "calls": 10,
+                  "input_tokens": 1989,
+                  "output_tokens": 22,
+                  "cached_tokens": 1600,
+                  "created_cache_tokens": 256,
+                  "elapsed_sec": 2.866
+                }
+              }
+            },
+            "dir": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-experience",
+            "paths": {
+              "s6-c1-dir": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-experience/s6-c1-dir.txt.gz",
+              "s6-c1-rs": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-experience/s6-c1-rs.txt.gz",
+              "s6-c2-asg": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-experience/s6-c2-asg.txt.gz",
+              "s6-c3-jdg": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-experience/s6-c3-jdg.txt.gz",
+              "s6-c4-asg": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-experience/s6-c4-asg.txt.gz",
+              "s6-c4-gen": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-experience/s6-c4-gen.txt.gz",
+              "s6-c4-jdg": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-experience/s6-c4-jdg.txt.gz",
+              "s6-c5-rs": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-experience/s6-c5-rs.txt.gz"
+            },
+            "stored": 136
+          },
+          "initial_exploration": {
+            "summary": {
+              "stored": 345,
+              "errors": 0,
+              "by_use_case": {
+                "s6-c1-dir": {
+                  "calls": 1,
+                  "input_tokens": 1250,
+                  "output_tokens": 33,
+                  "cached_tokens": 256,
+                  "created_cache_tokens": 992,
+                  "elapsed_sec": 0.89
+                },
+                "s6-c1-rs": {
+                  "calls": 123,
+                  "input_tokens": 23415,
+                  "output_tokens": 283,
+                  "cached_tokens": 19552,
+                  "created_cache_tokens": 768,
+                  "elapsed_sec": 24.107
+                },
+                "s6-c2-asg": {
+                  "calls": 33,
+                  "input_tokens": 6606,
+                  "output_tokens": 66,
+                  "cached_tokens": 5152,
+                  "created_cache_tokens": 1184,
+                  "elapsed_sec": 13.671
+                },
+                "s6-c3-jdg": {
+                  "calls": 6,
+                  "input_tokens": 3417,
+                  "output_tokens": 217,
+                  "cached_tokens": 768,
+                  "created_cache_tokens": 2560,
+                  "elapsed_sec": 7.633
+                },
+                "s6-c4-asg": {
+                  "calls": 136,
+                  "input_tokens": 24202,
+                  "output_tokens": 276,
+                  "cached_tokens": 16896,
+                  "created_cache_tokens": 4960,
+                  "elapsed_sec": 26.906
+                },
+                "s6-c4-gen": {
+                  "calls": 8,
+                  "input_tokens": 9211,
+                  "output_tokens": 107,
+                  "cached_tokens": 5472,
+                  "created_cache_tokens": 3616,
+                  "elapsed_sec": 4.015
+                },
+                "s6-c4-jdg": {
+                  "calls": 2,
+                  "input_tokens": 874,
+                  "output_tokens": 52,
+                  "cached_tokens": 256,
+                  "created_cache_tokens": 576,
+                  "elapsed_sec": 1.982
+                },
+                "s6-c5-rs": {
+                  "calls": 36,
+                  "input_tokens": 7076,
+                  "output_tokens": 72,
+                  "cached_tokens": 5632,
+                  "created_cache_tokens": 1120,
+                  "elapsed_sec": 4.134
+                }
+              }
+            },
+            "dir": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-initial_exploration",
+            "paths": {
+              "s6-c1-dir": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-initial_exploration/s6-c1-dir.txt.gz",
+              "s6-c1-rs": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-initial_exploration/s6-c1-rs.txt.gz",
+              "s6-c2-asg": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-initial_exploration/s6-c2-asg.txt.gz",
+              "s6-c3-jdg": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-initial_exploration/s6-c3-jdg.txt.gz",
+              "s6-c4-asg": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-initial_exploration/s6-c4-asg.txt.gz",
+              "s6-c4-gen": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-initial_exploration/s6-c4-gen.txt.gz",
+              "s6-c4-jdg": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-initial_exploration/s6-c4-jdg.txt.gz",
+              "s6-c5-rs": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-initial_exploration/s6-c5-rs.txt.gz"
+            },
+            "stored": 345
+          },
+          "own_and_service": {
+            "summary": {
+              "stored": 57,
+              "errors": 0,
+              "by_use_case": {
+                "s6-c1-dir": {
+                  "calls": 1,
+                  "input_tokens": 521,
+                  "output_tokens": 22,
+                  "cached_tokens": 256,
+                  "created_cache_tokens": 256,
+                  "elapsed_sec": 0.556
+                },
+                "s6-c1-rs": {
+                  "calls": 29,
+                  "input_tokens": 4883,
+                  "output_tokens": 66,
+                  "cached_tokens": 3648,
+                  "created_cache_tokens": 992,
+                  "elapsed_sec": 5.551
+                },
+                "s6-c2-asg": {
+                  "calls": 1,
+                  "input_tokens": 176,
+                  "output_tokens": 3,
+                  "cached_tokens": 96,
+                  "created_cache_tokens": 64,
+                  "elapsed_sec": 0.176
+                },
+                "s6-c3-jdg": {
+                  "calls": 1,
+                  "input_tokens": 542,
+                  "output_tokens": 29,
+                  "cached_tokens": 128,
+                  "created_cache_tokens": 384,
+                  "elapsed_sec": 1.037
+                },
+                "s6-c4-asg": {
+                  "calls": 15,
+                  "input_tokens": 2579,
+                  "output_tokens": 30,
+                  "cached_tokens": 1664,
+                  "created_cache_tokens": 736,
+                  "elapsed_sec": 1.826
+                },
+                "s6-c4-gen": {
+                  "calls": 1,
+                  "input_tokens": 1037,
+                  "output_tokens": 7,
+                  "cached_tokens": 0,
+                  "created_cache_tokens": 1024,
+                  "elapsed_sec": 0.576
+                },
+                "s6-c5-rs": {
+                  "calls": 9,
+                  "input_tokens": 1615,
+                  "output_tokens": 18,
+                  "cached_tokens": 1120,
+                  "created_cache_tokens": 320,
+                  "elapsed_sec": 0.848
+                }
+              }
+            },
+            "dir": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-own_and_service",
+            "paths": {
+              "s6-c1-dir": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-own_and_service/s6-c1-dir.txt.gz",
+              "s6-c1-rs": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-own_and_service/s6-c1-rs.txt.gz",
+              "s6-c2-asg": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-own_and_service/s6-c2-asg.txt.gz",
+              "s6-c3-jdg": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-own_and_service/s6-c3-jdg.txt.gz",
+              "s6-c4-asg": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-own_and_service/s6-c4-asg.txt.gz",
+              "s6-c4-gen": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-own_and_service/s6-c4-gen.txt.gz",
+              "s6-c5-rs": "/results/jf-cache/06ab26ab-bcce-4911-a18e-4bcbf9922684/llm-usage/6-own_and_service/s6-c5-rs.txt.gz"
+            },
+            "stored": 57
+          }
+        },
+        "llm_failures": {
+          "summary": {
+            "stored": 0,
+            "truncated": false,
+            "by_reason": {},
+            "by_use_case": {}
+          }
+        },
+        "use_case_concurrency": {
+          "jobs": 1,
+          "use_cases": {
+            "s6-c1-dir": 20,
+            "s6-c1-rs": 20,
+            "s6-c2-asg": 20,
+            "s6-c3-jdg": 20,
+            "s6-c4-jdg": 20,
+            "s6-c4-gen": 20,
+            "s6-c4-asg": 20,
+            "s6-c5-rs": 20
+          }
+        },
+        "metrics": {
+          "quality": {
+            "topics": 101,
+            "cycle_topics": 0,
+            "cycle_ratio": 0.0,
+            "cycle_examples": []
+          }
+        }
+      }
+    }
+  },
+  "files": {
+    "s1_keyword_expansion": 2247,
+    "s2_relevance": 2247,
+    "s3_attributes": 870,
+    "s4_brand": 870,
+    "s5_cdj": 870,
+    "s6_topics": 870
+  }
+}
