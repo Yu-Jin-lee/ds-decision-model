@@ -12,6 +12,7 @@ can run next to an on-demand job. Results: {output}ab/{name}/{run_id}/.
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from pathlib import Path
 
@@ -36,7 +37,8 @@ def main() -> None:
 
     commit, dirty = git_state()
     output = args.output if args.output.endswith("/") else args.output + "/"
-    base = f"{args.model}-ab-{args.name}"[:38].rstrip("-")
+    # SageMaker job names allow letters, digits and hyphens only (chon-1.0-e4b -> chon-1-0-e4b).
+    base = re.sub(r"[^a-zA-Z0-9-]", "-", f"{args.model}-ab-{args.name}")[:38].rstrip("-")
     hyper = {"model": args.model, "group": args.group, "seed": str(args.seed), "task": args.task,
              "lang": args.lang, "name": args.name}
     print(f"submit {args.model}/{args.group}/s{args.seed} {args.task}/{args.lang} on {args.name} -> {base} "
