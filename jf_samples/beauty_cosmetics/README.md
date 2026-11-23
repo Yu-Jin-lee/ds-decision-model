@@ -95,12 +95,18 @@ CEP 트랙은 유관/무관만 남고 유형 번호가 없습니다.
 
 | 컬럼 | 뜻 |
 |---|---|
-| `serp_top3` | 상위 3개 결과(featured snippet·organic)의 제목·스니펫, `[1] 제목\n스니펫` 형식 |
-| `ai_overview` | AI overview 본문(`AI overview (sources: …):` 머리줄 포함), 없으면 빈 칸 |
+| `serp` | 모델에 넣을 SERP, JSON 문자열. AI overview가 있으면 `{"ai_overview": "본문 앞 최대 1000자"}`, 없으면 `{"results": [{"title", "snippet"}, …]}` (상위 3개) |
+| `serp_type` | `ai_overview` 또는 `results` |
 | `serp_source` | SERP를 어디서 다시 찾았는지 (아래) |
 | `serp_requested_at` | 그 SERP가 수집된 시각(UTC) |
 
-이 run들(11-10)의 프롬프트에는 `serp_top3`만 들어갔습니다. AI overview가 있으면 그것만 넣는 규칙은 2026-11-11 코드부터입니다. 디시전 모델 설정(`configs/tasks.yaml`의 `serp_overview_or_top`)처럼 AI overview를 먼저 쓰려면 `ai_overview`가 있을 때 그것을, 없으면 `serp_top3`를 쓰면 됩니다.
+`serp`는 이 저장소의 `inputs.serp_overview_or_top`(`overview_chars: 1000`, `top_results: 3`)이 만드는 값과 같은 모양이라 그대로 state에 넣으면 됩니다.
+
+- AI overview 본문은 출처 칩·링크를 뗀 줄글입니다(문단은 한 줄, 목록은 `- `). 1000자에서 그대로 자릅니다.
+- 상위 결과는 featured snippet·organic만, SERP에 나온 순서대로입니다. 결과가 3개보다 적은 SERP도 있습니다(s4·s5에서 1건이 1개).
+- 행 수: s2 AI overview 3,043 · 상위 결과 715 / s4·s5 AI overview 1,917 · 상위 결과 664.
+
+이 run들(11-10)이 실제로 돌 때 프롬프트에는 AI overview 없이 상위 3개 결과만 들어갔습니다. AI overview를 우선하는 규칙은 2026-11-11 코드부터입니다. 그래서 `serp_type = ai_overview`인 행은 원래 모델이 본 입력과 다릅니다.
 
 ### SERP를 다시 찾은 방법
 

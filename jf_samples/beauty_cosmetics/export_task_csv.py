@@ -1,5 +1,8 @@
 """JF run → S2(Span)·S4·S5 태스크 CSV: 프롬프트 입력 컬럼 + 결과 컬럼.
 
+serp 컬럼은 JSON 문자열이다 — AI overview가 있으면 {"ai_overview": 본문 앞 1000자},
+없으면 {"results": [{"title", "snippet"}, …상위 3개]}.
+
 사용 (jf 서버에서):
   python export_task_csv.py <출력 폴더> --jf-backend <ds-journey-finder-async/backend> \
       kr=<job_id> jp=<job_id> us=<job_id>
@@ -25,6 +28,8 @@ import requests
 ROOT = Path("/data/prefect-results/jf")
 HBASE = "https://mongttang-data-api.ascentlab.io/serp"
 LOCALE = {"kr": ("ko", "kr"), "jp": ("ja", "jp"), "us": ("en", "us")}
+OVERVIEW_CHARS = 1000
+TOP_RESULTS = 3
 TYPE_LABEL = {0: "related", 1: "other_category", 2: "same_name_other_category", 3: "hiring",
               4: "stock_finance", 5: "news_pr", 6: "person", 7: "other_unrelated"}
 
@@ -89,12 +94,17 @@ def export(country, job_id, serp_mod):
         if source == "serp_key":
             check["stored_keys"] += 1
             check["rule_matches_stored"] += picked == key
-        record = serp_mod.serp_record(raw) if raw else None
+        record = (serp_mod.serp_record(raw) or {}) if raw else {}
         overview = serp_mod.extract_ai_overview(raw) if raw else None
-        top3 = serp_mod.format_serp_for_prompt(record, empty="") if record else ""
+        # 디시전 모델 inputs.serp_overview_or_top과 같은 모양:
+        # AI overview가 있으면 본문 앞 1000자, 없으면 상위 3개 결과의 title·snippet
+        if overview:
+            value, kind = {"ai_overview": overview["text"][:OVERVIEW_CHARS]}, "ai_overview"
+        else:
+            results = [{k: f[k] for k in ("title", "snippet") if f.get(k)} for f in record.get("features") or []]
+            value, kind = {"results": [r for r in results if r][:TOP_RESULTS]}, "results"
         requested = ((raw or {}).get("search_parameters") or {}).get("requested_time", "")
-        serp[q] = {"serp_top3": top3,
-                   "ai_overview": serp_mod.format_ai_overview(overview) if overview else "",
+        serp[q] = {"serp": json.dumps(value, ensure_ascii=False), "serp_type": kind,
                    "serp_source": source, "serp_requested_at": requested}
 
     industry = s1.get("category_1depth") or ""
