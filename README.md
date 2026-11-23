@@ -114,6 +114,25 @@ python scripts/launch_sagemaker.py --model kev-4b --group B0-s5-choice --group S
 결과는 `runs/serving/{모델}/{실험군}/s{seed}/`에 따로 저장되고 평가 실행은 건드리지 않습니다.
 `summary.json`의 `latency_development`가 속도이고, `metrics_development`는 serving 경로의 정확도입니다(평가 경로와 답이 같은지 확인용).
 Chon의 vLLM이나 Kev의 fused 커널이 뜨지 않으면 조용히 느린 경로로 재지 않고 실행이 실패합니다.
+serving 배치는 학습한 실행이 끝날 때마다 받은 체크포인트와 Chon이 병합한 모델을 지웁니다(병합본은 어댑터마다 전체 모델 하나라 쌓이면 디스크가 찹니다).
+
+### A/B: 실제 데이터에서 기존 결과와 비교
+
+끝난 실행 하나의 모델을 바깥 데이터(예: `jf_samples/`)로 돌려, 그 데이터의 기존 결과(운영 Gemma 판정)와 얼마나 같은지 봅니다.
+지시문·선택지·라벨은 그 실행의 태스크 형식(`configs/tasks.yaml`), 입력 형식은 학습 데이터와 같고, 체크포인트와 보정 온도는 그 실행의 `summary.json`에서 읽습니다.
+라벨이 사람 정답이 아니라 기존 시스템의 답이라, 정확도는 **일치율**입니다.
+
+```bash
+python scripts/jf_to_master.py --task s5 --csv jf_samples/beauty_cosmetics/tasks/s5.csv --country kr --out jf_s5_kr.jsonl.gz
+python scripts/prepare_data.py --task s5 --master jf_s5_kr.jsonl.gz --out data_ab/jf-beauty-kr-s5
+aws s3 sync data_ab/jf-beauty-kr-s5 s3://BUCKET/ds-jf-decision-model/data-ab/jf-beauty-kr-s5/
+python scripts/ab_launch.py --model chon-1.0-e4b --group J-best --seed 0 --task s5 --lang ko --name jf-beauty-kr-s5 \
+  --data s3://BUCKET/ds-jf-decision-model/data-ab/jf-beauty-kr-s5/ --output s3://BUCKET/ds-jf-decision-model/runs/ \
+  --role ... --image-uri ... --spot
+```
+
+결과는 `runs/ab/{name}/{run_id}/`: `summary.json`(일치율), `keywords.csv`(키워드별 기존 라벨·모델 답·확률·일치), `scored_development.jsonl`.
+`--spot`은 따로 잡힌 스팟 한도를 써서 온디맨드 작업과 동시에 돕니다.
 
 ## 모델 추가하기
 

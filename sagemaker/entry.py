@@ -20,6 +20,7 @@ so every job uses the same versions (design doc: one image for all runs).
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -245,23 +246,58 @@ def run_batch(model: str, runs: list[tuple[str, int]], extra: list[str], resume_
         run_id = f"{model}/{group}/s{seed}"
         if serving:
             run_id = f"serving/{run_id}"   # pipeline.SERVING_DIR
-        print(f"=== [{i}/{len(runs)}] {run_id}", flush=True)
+        print(f"=== [{i}/{len(runs)}] {run_id} ({disk_free()})", flush=True)
+        before = _merged_entries()
+        more: list[str] = []
         try:
             more = (["--serving", *serving_checkpoint_args(model, group, seed)] if serving
                     else resume_args(resume_root, run_id))
             sh(sys.executable, str(REPO / "scripts" / "run.py"), "--model", model, "--group", group, "--seed", str(seed),
                *extra, *more)
-        except (subprocess.CalledProcessError, SystemExit) as error:
-            code = error.returncode if isinstance(error, subprocess.CalledProcessError) else error.code
+        except (subprocess.CalledProcessError, SystemExit, OSError) as error:
+            code = (error.returncode if isinstance(error, subprocess.CalledProcessError)
+                    else error.code if isinstance(error, SystemExit) else repr(error))
             print(f"!!! {run_id} failed (exit {code}); continuing", flush=True)
             failed.append(run_id)
             continue
+        finally:
+            if serving:
+                free_serving_disk(more, before)
         upload_outputs(run_id)
         # Results are in S3 now; free the disk and keep model.tar.gz from duplicating them.
         shutil.rmtree(model_dir / run_id, ignore_errors=True)
     print(f"=== batch done: {len(runs) - len(failed)} ok, {len(failed)} failed {failed}", flush=True)
     if failed:
         sys.exit(1)
+
+
+def disk_free(path: str = "/opt/ml") -> str:
+    try:
+        usage = shutil.disk_usage(path)
+    except OSError:
+        return "disk ?"
+    return f"{usage.free / 2**30:.0f} GB free of {usage.total / 2**30:.0f} GB on {path}"
+
+
+def _merged_dir() -> Path:
+    return Path(os.environ.get("CHON_MERGED_DIR", "/opt/ml/models/chon-merged"))
+
+
+def _merged_entries() -> set[Path]:
+    directory = _merged_dir()
+    return set(directory.iterdir()) if directory.is_dir() else set()
+
+
+def free_serving_disk(more: list[str], merged_before: set[Path]) -> None:
+    """After a serving run of a trained checkpoint: delete its downloaded checkpoint and the merged copy the
+    Chon vLLM reader made of it (one full model per adapter), so a batch of trained runs does not fill the disk.
+    Merged copies of the released adapter (B0) stay, since every B0 run reuses them."""
+    if "--checkpoint" not in more:
+        return
+    root = Path(os.environ.get("SERVING_CHECKPOINTS_DIR", "/opt/ml/serving-checkpoints"))
+    shutil.rmtree(root, ignore_errors=True)
+    for entry in _merged_entries() - merged_before:
+        shutil.rmtree(entry, ignore_errors=True) if entry.is_dir() else entry.unlink(missing_ok=True)
 
 
 def upload_outputs(run_id: str | None = None) -> None:
