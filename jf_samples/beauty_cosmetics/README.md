@@ -99,6 +99,7 @@ CEP 트랙은 유관/무관만 남고 유형 번호가 없습니다.
 | `serp_type` | `ai_overview` 또는 `results` |
 | `serp_source` | SERP를 어디서 다시 찾았는지 (아래) |
 | `serp_requested_at` | 그 SERP가 수집된 시각(UTC) |
+| `run_serp_query` | run이 이 키워드에 **다른 검색어의 SERP**를 붙였던 것이 확인되면 그 검색어. 이때 `serp`는 키워드 자신의 SERP로 바꿔 넣었습니다. 보통은 빈 칸(이 세 run은 0건) |
 
 `serp`는 이 저장소의 `inputs.serp_overview_or_top`(`overview_chars: 1000`, `top_results: 3`)이 만드는 값과 같은 모양이라 그대로 state에 넣으면 됩니다.
 
@@ -125,16 +126,6 @@ S1이 hbase가 비어 수집 API로 직접 받은 SERP는 hbase에 남지 않습
 - **S2**: CEP 트랙 키워드는 넣지 않았습니다(유형 번호가 없습니다). Span 트랙은 `relevant == (type_num == 0)`입니다.
 - **S4**: `target`이 비면 LLM을 부르지 않고 논브랜드로 둡니다(`llm_called = false`). LLM 판정 뒤에는 **같은 target끼리 brand를 다수결로 맞춥니다**(동점이면 논브랜드). 그래서 `brand`는 LLM 원답이 아니라 이 보정까지 거친 최종값입니다. 원답은 단계 캐시와 함께 지워졌습니다.
 - **S5**: `stage_num`은 `brand`에 따라 뜻이 다릅니다([S5 `stage_num`](#s5-stage_num)).
-
-## 다시 만들기
-
-```bash
-# jf 서버에서, /data/prefect-results 읽기 권한 필요. S3~S5 오류가 있는 run은 거부한다.
-python export_stages.py <출력 폴더> kr=<job_id> jp=<job_id> us=<job_id>
-
-# 태스크 CSV — SERP 정리에 JF 백엔드의 app.serp를 쓴다 (그 venv의 python으로)
-python export_task_csv.py tasks --jf-backend <ds-journey-finder-async/backend> kr=<job_id> jp=<job_id> us=<job_id>
-```
 
 ## 읽기
 
