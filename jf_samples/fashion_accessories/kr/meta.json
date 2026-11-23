@@ -1,0 +1,1247 @@
+{
+  "job_id": "73c6ddf8-ceb1-4c65-a355-f7d61d560bc8",
+  "country": "kr",
+  "queries": [
+    "coach"
+  ],
+  "input_mode": "seed",
+  "started_at": "2026-11-16T03:20:48.245550+00:00",
+  "volume_month": "2026-10",
+  "graph_build_date": "2026-11-13",
+  "status": "DONE",
+  "finished_at": "2026-11-16T03:24:30.519562+00:00",
+  "industry": "패션잡화/액세서리",
+  "category_2depth": [
+    "럭셔리 가죽 잡화"
+  ],
+  "steps": {
+    "1": {
+      "name": "S1-키워드 확장",
+      "finished_at": "2026-11-16T03:21:51.420267+00:00",
+      "stats": {
+        "category_1depth": "패션잡화/액세서리",
+        "category_2depth": [
+          "럭셔리 가죽 잡화"
+        ],
+        "seeds": 1,
+        "substeps": {
+          "1": null,
+          "2": 34,
+          "3": 219,
+          "4": 10898,
+          "5": 2303,
+          "6": 2302
+        },
+        "keywords": 2302,
+        "serp_snippets": 2302,
+        "keyword_elapsed_count": 0,
+        "volume_month": "2026-10",
+        "graph_build_date": "2026-11-13",
+        "llm_stats": {
+          "calls": 5,
+          "retries": 0,
+          "failures": 0,
+          "successes": 5,
+          "validation_attempts": 5,
+          "validation_failures": 0,
+          "retries_by_reason": {},
+          "failures_by_reason": {},
+          "validation_failures_by_reason": {},
+          "finish_by_reason": {
+            "stop": 5
+          },
+          "prompt_tokens": 5532,
+          "completion_tokens": 497,
+          "cached_tokens": 2976,
+          "created_cache_tokens": 2464,
+          "usage_samples": 5,
+          "llm_elapsed_sec": 6.397,
+          "elapsed_samples": 5,
+          "avg_call_sec": 1.279
+        },
+        "llm_failures": {
+          "summary": {
+            "stored": 0,
+            "truncated": false,
+            "by_reason": {},
+            "by_use_case": {}
+          }
+        },
+        "use_case_concurrency": {
+          "jobs": 1,
+          "use_cases": {
+            "s1-md": 1,
+            "s1-cep": 64
+          }
+        },
+        "llm_calls": {
+          "summary": {
+            "stored": 5,
+            "errors": 0,
+            "by_use_case": {
+              "s1-cep": {
+                "calls": 5,
+                "input_tokens": 5532,
+                "output_tokens": 497,
+                "cached_tokens": 2976,
+                "created_cache_tokens": 2464,
+                "elapsed_sec": 6.397
+              }
+            }
+          },
+          "dir": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/1",
+          "paths": {
+            "s1-cep": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/1/s1-cep.txt.gz"
+          },
+          "stored": 5
+        }
+      }
+    },
+    "2": {
+      "name": "S2-유무관 분류",
+      "finished_at": "2026-11-16T03:22:34.933639+00:00",
+      "stats": {
+        "seed_passthrough": 0,
+        "cep": {
+          "total": 296,
+          "relevant": 97,
+          "irrelevant": 199,
+          "unknown": 0,
+          "batches": 296,
+          "elapsed_sec": 2.93
+        },
+        "span": {
+          "total": 2090,
+          "relevant": 1310,
+          "irrelevant": 780,
+          "unknown": 0,
+          "batches": 2090,
+          "elapsed_sec": 38.57
+        },
+        "relevant_total": 1381,
+        "keyword_results_count": 2386,
+        "llm_stats": {
+          "calls": 2386,
+          "retries": 0,
+          "failures": 0,
+          "successes": 2386,
+          "validation_attempts": 2386,
+          "validation_failures": 0,
+          "retries_by_reason": {},
+          "failures_by_reason": {},
+          "validation_failures_by_reason": {},
+          "finish_by_reason": {
+            "stop": 2386
+          },
+          "prompt_tokens": 4607910,
+          "completion_tokens": 8667,
+          "cached_tokens": 3712096,
+          "created_cache_tokens": 858624,
+          "usage_samples": 2386,
+          "llm_elapsed_sec": 1641.233,
+          "elapsed_samples": 2386,
+          "avg_call_sec": 0.688
+        },
+        "llm_failures": {
+          "summary": {
+            "stored": 0,
+            "truncated": false,
+            "by_reason": {},
+            "by_use_case": {}
+          }
+        },
+        "use_case_concurrency": {
+          "jobs": 2,
+          "use_cases": {
+            "s2-cep": 40,
+            "s2-span": 40
+          }
+        },
+        "llm_calls": {
+          "summary": {
+            "stored": 2386,
+            "errors": 0,
+            "by_use_case": {
+              "s2-cep": {
+                "calls": 296,
+                "input_tokens": 189534,
+                "output_tokens": 2143,
+                "cached_tokens": 142432,
+                "created_cache_tokens": 42560,
+                "elapsed_sec": 111.693
+              },
+              "s2-span": {
+                "calls": 2090,
+                "input_tokens": 4418376,
+                "output_tokens": 6524,
+                "cached_tokens": 3569664,
+                "created_cache_tokens": 816064,
+                "elapsed_sec": 1529.541
+              }
+            }
+          },
+          "dir": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/2",
+          "paths": {
+            "s2-cep": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/2/s2-cep.txt.gz",
+            "s2-span": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/2/s2-span.txt.gz"
+          },
+          "stored": 2386
+        },
+        "metrics": {
+          "quality": {
+            "classified": 2386,
+            "relevant": 1407,
+            "relevant_ratio": 0.5897,
+            "cep_relevant_ratio": 0.3277,
+            "span_relevant_ratio": 0.6268
+          }
+        }
+      }
+    },
+    "3": {
+      "name": "S3-검색어 속성 추출",
+      "finished_at": "2026-11-16T03:23:14.368174+00:00",
+      "stats": {
+        "total": 1381,
+        "success": 1381,
+        "error": 0,
+        "serp_hit": 1381,
+        "elapsed_sec": 37.07,
+        "llm_stats": {
+          "calls": 1383,
+          "retries": 2,
+          "failures": 0,
+          "successes": 1381,
+          "validation_attempts": 1383,
+          "validation_failures": 3,
+          "retries_by_reason": {
+            "validation": 2
+          },
+          "failures_by_reason": {},
+          "validation_failures_by_reason": {
+            "MultiAttrTokenError": 3
+          },
+          "finish_by_reason": {
+            "stop": 1383
+          },
+          "prompt_tokens": 1956420,
+          "completion_tokens": 14619,
+          "cached_tokens": 1370720,
+          "created_cache_tokens": 564480,
+          "usage_samples": 1383,
+          "llm_elapsed_sec": 1474.88,
+          "elapsed_samples": 1381,
+          "avg_call_sec": 1.068
+        },
+        "llm_failures": {
+          "summary": {
+            "stored": 0,
+            "truncated": false,
+            "by_reason": {},
+            "by_use_case": {}
+          }
+        },
+        "use_case_concurrency": {
+          "jobs": 2,
+          "use_cases": {
+            "s3-tok": 40
+          }
+        },
+        "llm_calls": {
+          "summary": {
+            "stored": 1381,
+            "errors": 0,
+            "by_use_case": {
+              "s3-tok": {
+                "calls": 1381,
+                "input_tokens": 1956420,
+                "output_tokens": 14619,
+                "cached_tokens": 1370720,
+                "created_cache_tokens": 564480,
+                "elapsed_sec": 1474.88
+              }
+            }
+          },
+          "dir": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/3",
+          "paths": {
+            "s3-tok": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/3/s3-tok.txt.gz"
+          },
+          "stored": 1381
+        },
+        "metrics": {
+          "quality": {
+            "rows": 1381,
+            "multi_attr_rows": 1,
+            "multi_attr_row_ratio": 0.0007,
+            "tokens": 763,
+            "multi_attr_tokens": 26,
+            "multi_attr_token_ratio": 0.0341,
+            "multi_attr_examples": [
+              "명품(Target 41 · Intent 15)",
+              "브랜드(Target 35 · Intent 9)",
+              "아울렛(Intent 7 · Target 7)",
+              "더쿠(Site 35 · Target 5)",
+              "미국(Intent 6 · Target 5)"
+            ],
+            "site_rows": 166,
+            "site_leading_rows": 2,
+            "site_leading_ratio": 0.012,
+            "site_leading_examples": [
+              "더쿠 명품 후회 더쿠",
+              "musinsa coach"
+            ]
+          }
+        }
+      }
+    },
+    "4": {
+      "name": "S4-브랜드/제네릭 분류",
+      "finished_at": "2026-11-16T03:23:49.898652+00:00",
+      "stats": {
+        "total": 1381,
+        "success": 1381,
+        "error": 0,
+        "serp_hit": 1381,
+        "elapsed_sec": 24.35,
+        "llm_stats": {
+          "calls": 1539,
+          "retries": 0,
+          "failures": 0,
+          "successes": 1539,
+          "validation_attempts": 1539,
+          "validation_failures": 0,
+          "retries_by_reason": {},
+          "failures_by_reason": {},
+          "validation_failures_by_reason": {},
+          "finish_by_reason": {
+            "stop": 1539
+          },
+          "prompt_tokens": 1607363,
+          "completion_tokens": 7521,
+          "cached_tokens": 961920,
+          "created_cache_tokens": 621152,
+          "usage_samples": 1539,
+          "llm_elapsed_sec": 1640.215,
+          "elapsed_samples": 1539,
+          "avg_call_sec": 1.066
+        },
+        "llm_failures": {
+          "summary": {
+            "stored": 0,
+            "truncated": false,
+            "by_reason": {},
+            "by_use_case": {}
+          }
+        },
+        "use_case_concurrency": {
+          "jobs": 1,
+          "use_cases": {
+            "s4-bg": 64,
+            "s4b-grp": 1,
+            "s4b-asg": 64
+          }
+        },
+        "llm_calls": {
+          "summary": {
+            "stored": 1539,
+            "errors": 0,
+            "by_use_case": {
+              "s4-bg": {
+                "calls": 1381,
+                "input_tokens": 1475269,
+                "output_tokens": 7144,
+                "cached_tokens": 882560,
+                "created_cache_tokens": 570816,
+                "elapsed_sec": 1531.854
+              },
+              "s4b-asg": {
+                "calls": 157,
+                "input_tokens": 129497,
+                "output_tokens": 315,
+                "cached_tokens": 79360,
+                "created_cache_tokens": 47744,
+                "elapsed_sec": 107.658
+              },
+              "s4b-grp": {
+                "calls": 1,
+                "input_tokens": 2597,
+                "output_tokens": 62,
+                "cached_tokens": 0,
+                "created_cache_tokens": 2592,
+                "elapsed_sec": 0.702
+              }
+            }
+          },
+          "dir": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/4",
+          "paths": {
+            "s4-bg": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/4/s4-bg.txt.gz",
+            "s4b-asg": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/4/s4b-asg.txt.gz",
+            "s4b-grp": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/4/s4b-grp.txt.gz"
+          },
+          "stored": 1539
+        }
+      }
+    },
+    "5": {
+      "name": "S5-CDJ 단계 분류",
+      "finished_at": "2026-11-16T03:24:14.675952+00:00",
+      "stats": {
+        "total": 1381,
+        "success": 1381,
+        "error": 0,
+        "serp_hit": 1381,
+        "elapsed_sec": 22.38,
+        "llm_stats": {
+          "calls": 1381,
+          "retries": 0,
+          "failures": 0,
+          "successes": 1381,
+          "validation_attempts": 1381,
+          "validation_failures": 0,
+          "retries_by_reason": {},
+          "failures_by_reason": {},
+          "validation_failures_by_reason": {},
+          "finish_by_reason": {
+            "stop": 1381
+          },
+          "prompt_tokens": 1606136,
+          "completion_tokens": 2762,
+          "cached_tokens": 1003840,
+          "created_cache_tokens": 581472,
+          "usage_samples": 1381,
+          "llm_elapsed_sec": 1408.222,
+          "elapsed_samples": 1381,
+          "avg_call_sec": 1.02
+        },
+        "llm_failures": {
+          "summary": {
+            "stored": 0,
+            "truncated": false,
+            "by_reason": {},
+            "by_use_case": {}
+          }
+        },
+        "use_case_concurrency": {
+          "jobs": 1,
+          "use_cases": {
+            "s5-cdj": 64
+          }
+        },
+        "llm_calls": {
+          "summary": {
+            "stored": 1381,
+            "errors": 0,
+            "by_use_case": {
+              "s5-cdj": {
+                "calls": 1381,
+                "input_tokens": 1606136,
+                "output_tokens": 2762,
+                "cached_tokens": 1003840,
+                "created_cache_tokens": 581472,
+                "elapsed_sec": 1408.222
+              }
+            }
+          },
+          "dir": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/5",
+          "paths": {
+            "s5-cdj": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/5/s5-cdj.txt.gz"
+          },
+          "stored": 1381
+        },
+        "metrics": {
+          "quality": {
+            "rows": 1381,
+            "other_rows": 4,
+            "other_ratio": 0.0029,
+            "intent_groups": 88,
+            "intent_split_groups": 7,
+            "intent_split_ratio": 0.0795,
+            "intent_split_examples": [
+              "coach 남자(Browsing 63) / 남자 구찌 지갑 디시(Experience 10)",
+              "닥스 지갑 인식(Browsing 9) / 비비안웨스트우드 지갑 인식(Experience 4)",
+              "런칭샵 정품 확인법(Own & Service 1) / 아울렛 굿즈 정품 확인법(Initial Exploration 1)",
+              "수 명품관 정품(Experience 1) / 코치 아울렛 정품(Browsing 1)",
+              "구찌 가방 진품 구별법(Experience 1) / 프라다 지갑 진품 구별법(Own & Service 1)"
+            ],
+            "target_intent_groups": 44,
+            "target_intent_split_groups": 5,
+            "target_intent_split_ratio": 0.1136,
+            "target_intent_split_examples": [
+              "프라다 남자 지갑(Browsing 2) / 프라다 남자 지갑 디시(Experience 2)",
+              "구찌 남자 지갑(Browsing 3) / 남자 구찌 지갑 디시(Experience 1)",
+              "남자 지갑 디올(Browsing 3) / 남자 디올 지갑 디시(Experience 1)",
+              "남자 코치 지갑 디시(Experience 1) / 코치 지갑 남자(Browsing 1)",
+              "프라다 카드지갑 남자(Browsing 1) / 프라다 카드 지갑 남자 디시(Experience 1)"
+            ],
+            "same_attrs_groups": 21,
+            "same_attrs_split_groups": 0,
+            "same_attrs_split_ratio": 0.0,
+            "same_attrs_split_examples": []
+          }
+        }
+      }
+    },
+    "6": {
+      "name": "S6-토픽 클러스터링",
+      "finished_at": "2026-11-16T03:24:30.166448+00:00",
+      "stats": {
+        "stages": [
+          "browsing",
+          "confirmation",
+          "experience",
+          "initial_exploration",
+          "own_and_service"
+        ],
+        "topics": {
+          "initial_exploration": {
+            "d1_topics": 8,
+            "max_depth": 4,
+            "assigned": 318,
+            "unassigned": 0,
+            "roots": [
+              {
+                "label": "대상 및 연령",
+                "keywords": 180
+              },
+              {
+                "label": "추천 및 순위",
+                "keywords": 27
+              },
+              {
+                "label": "브랜드 및 종류",
+                "keywords": 43
+              },
+              {
+                "label": "가격 및 구매",
+                "keywords": 15
+              },
+              {
+                "label": "품질 및 소재",
+                "keywords": 12
+              },
+              {
+                "label": "평가 및 인식",
+                "keywords": 32
+              },
+              {
+                "label": "스타일 및 코디",
+                "keywords": 8
+              },
+              {
+                "label": "기타",
+                "keywords": 1
+              }
+            ]
+          },
+          "browsing": {
+            "d1_topics": 7,
+            "max_depth": 4,
+            "assigned": 736,
+            "unassigned": 0,
+            "roots": [
+              {
+                "label": "대상 및 성별",
+                "keywords": 120
+              },
+              {
+                "label": "브랜드 정보 및 인지도",
+                "keywords": 92
+              },
+              {
+                "label": "신상품 및 시즌",
+                "keywords": 17
+              },
+              {
+                "label": "색상 및 소재",
+                "keywords": 25
+              },
+              {
+                "label": "사이즈 및 규격",
+                "keywords": 7
+              },
+              {
+                "label": "브랜드 정체성 및 스타일",
+                "keywords": 7
+              },
+              {
+                "label": "제품 종류 및 특징",
+                "keywords": 468
+              }
+            ]
+          },
+          "experience": {
+            "d1_topics": 5,
+            "max_depth": 2,
+            "assigned": 121,
+            "unassigned": 0,
+            "roots": [
+              {
+                "label": "추천 및 순위",
+                "keywords": 12
+              },
+              {
+                "label": "성별 및 연령",
+                "keywords": 23
+              },
+              {
+                "label": "후기 및 평가",
+                "keywords": 70
+              },
+              {
+                "label": "정품 및 가품 구별",
+                "keywords": 7
+              },
+              {
+                "label": "차이 및 인식",
+                "keywords": 9
+              }
+            ]
+          },
+          "confirmation": {
+            "d1_topics": 7,
+            "max_depth": 4,
+            "assigned": 164,
+            "unassigned": 0,
+            "roots": [
+              {
+                "label": "가격 및 할인",
+                "keywords": 52
+              },
+              {
+                "label": "매장 및 위치",
+                "keywords": 48
+              },
+              {
+                "label": "성별",
+                "keywords": 12
+              },
+              {
+                "label": "온라인 구매",
+                "keywords": 20
+              },
+              {
+                "label": "해외 직구",
+                "keywords": 25
+              },
+              {
+                "label": "중고 및 대행",
+                "keywords": 6
+              },
+              {
+                "label": "기타",
+                "keywords": 1
+              }
+            ]
+          },
+          "own_and_service": {
+            "d1_topics": 6,
+            "max_depth": 1,
+            "assigned": 38,
+            "unassigned": 0,
+            "roots": [
+              {
+                "label": "정품 확인 및 구별",
+                "keywords": 12
+              },
+              {
+                "label": "수명 및 관리",
+                "keywords": 8
+              },
+              {
+                "label": "수선 및 품질",
+                "keywords": 6
+              },
+              {
+                "label": "조회 및 확인방법",
+                "keywords": 9
+              },
+              {
+                "label": "구매 및 수급",
+                "keywords": 2
+              },
+              {
+                "label": "기타",
+                "keywords": 1
+              }
+            ]
+          }
+        },
+        "skipped_small": {},
+        "skipped_non_cdj": {
+          "other": 4
+        },
+        "concurrency": {
+          "sllm_concurrency": 64,
+          "sllm_assign_concurrency": 64
+        },
+        "llm_stats": {
+          "browsing": {
+            "calls": 1076,
+            "retries": 0,
+            "failures": 0,
+            "successes": 1076,
+            "validation_attempts": 1076,
+            "validation_failures": 0,
+            "retries_by_reason": {},
+            "failures_by_reason": {},
+            "validation_failures_by_reason": {},
+            "finish_by_reason": {
+              "stop": 1076
+            },
+            "prompt_tokens": 228008,
+            "completion_tokens": 2965,
+            "cached_tokens": 165856,
+            "created_cache_tokens": 48480,
+            "usage_samples": 1076,
+            "llm_elapsed_sec": 289.943,
+            "elapsed_samples": 1076,
+            "avg_call_sec": 0.269
+          },
+          "confirmation": {
+            "calls": 396,
+            "retries": 0,
+            "failures": 0,
+            "successes": 396,
+            "validation_attempts": 396,
+            "validation_failures": 0,
+            "retries_by_reason": {},
+            "failures_by_reason": {},
+            "validation_failures_by_reason": {},
+            "finish_by_reason": {
+              "stop": 396
+            },
+            "prompt_tokens": 88743,
+            "completion_tokens": 1363,
+            "cached_tokens": 56832,
+            "created_cache_tokens": 26016,
+            "usage_samples": 396,
+            "llm_elapsed_sec": 156.826,
+            "elapsed_samples": 396,
+            "avg_call_sec": 0.396
+          },
+          "experience": {
+            "calls": 184,
+            "retries": 0,
+            "failures": 0,
+            "successes": 184,
+            "validation_attempts": 184,
+            "validation_failures": 0,
+            "retries_by_reason": {},
+            "failures_by_reason": {},
+            "validation_failures_by_reason": {},
+            "finish_by_reason": {
+              "stop": 184
+            },
+            "prompt_tokens": 41037,
+            "completion_tokens": 643,
+            "cached_tokens": 26016,
+            "created_cache_tokens": 11360,
+            "usage_samples": 184,
+            "llm_elapsed_sec": 95.038,
+            "elapsed_samples": 184,
+            "avg_call_sec": 0.517
+          },
+          "initial_exploration": {
+            "calls": 805,
+            "retries": 0,
+            "failures": 0,
+            "successes": 805,
+            "validation_attempts": 805,
+            "validation_failures": 0,
+            "retries_by_reason": {},
+            "failures_by_reason": {},
+            "validation_failures_by_reason": {},
+            "finish_by_reason": {
+              "stop": 805
+            },
+            "prompt_tokens": 177877,
+            "completion_tokens": 2549,
+            "cached_tokens": 116960,
+            "created_cache_tokens": 47616,
+            "usage_samples": 805,
+            "llm_elapsed_sec": 309.225,
+            "elapsed_samples": 805,
+            "avg_call_sec": 0.384
+          },
+          "own_and_service": {
+            "calls": 47,
+            "retries": 0,
+            "failures": 0,
+            "successes": 47,
+            "validation_attempts": 47,
+            "validation_failures": 0,
+            "retries_by_reason": {},
+            "failures_by_reason": {},
+            "validation_failures_by_reason": {},
+            "finish_by_reason": {
+              "stop": 47
+            },
+            "prompt_tokens": 9716,
+            "completion_tokens": 180,
+            "cached_tokens": 5760,
+            "created_cache_tokens": 3392,
+            "usage_samples": 47,
+            "llm_elapsed_sec": 16.328,
+            "elapsed_samples": 47,
+            "avg_call_sec": 0.347
+          }
+        },
+        "llm_calls": {
+          "browsing": {
+            "summary": {
+              "stored": 1076,
+              "errors": 0,
+              "by_use_case": {
+                "s6-c1-dir": {
+                  "calls": 1,
+                  "input_tokens": 702,
+                  "output_tokens": 41,
+                  "cached_tokens": 288,
+                  "created_cache_tokens": 384,
+                  "elapsed_sec": 0.911
+                },
+                "s6-c1-rs": {
+                  "calls": 53,
+                  "input_tokens": 9781,
+                  "output_tokens": 120,
+                  "cached_tokens": 8352,
+                  "created_cache_tokens": 128,
+                  "elapsed_sec": 8.926
+                },
+                "s6-c2-asg": {
+                  "calls": 526,
+                  "input_tokens": 101991,
+                  "output_tokens": 1052,
+                  "cached_tokens": 84032,
+                  "created_cache_tokens": 13184,
+                  "elapsed_sec": 126.657
+                },
+                "s6-c3-jdg": {
+                  "calls": 5,
+                  "input_tokens": 7626,
+                  "output_tokens": 198,
+                  "cached_tokens": 640,
+                  "created_cache_tokens": 6912,
+                  "elapsed_sec": 10.787
+                },
+                "s6-c4-asg": {
+                  "calls": 453,
+                  "input_tokens": 81840,
+                  "output_tokens": 958,
+                  "cached_tokens": 61792,
+                  "created_cache_tokens": 13312,
+                  "elapsed_sec": 124.895
+                },
+                "s6-c4-gen": {
+                  "calls": 11,
+                  "input_tokens": 14969,
+                  "output_tokens": 202,
+                  "cached_tokens": 6848,
+                  "created_cache_tokens": 7968,
+                  "elapsed_sec": 6.517
+                },
+                "s6-c4-jdg": {
+                  "calls": 9,
+                  "input_tokens": 7724,
+                  "output_tokens": 358,
+                  "cached_tokens": 1152,
+                  "created_cache_tokens": 6400,
+                  "elapsed_sec": 10.045
+                },
+                "s6-c5-rs": {
+                  "calls": 18,
+                  "input_tokens": 3375,
+                  "output_tokens": 36,
+                  "cached_tokens": 2752,
+                  "created_cache_tokens": 192,
+                  "elapsed_sec": 1.206
+                }
+              }
+            },
+            "dir": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-browsing",
+            "paths": {
+              "s6-c1-dir": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-browsing/s6-c1-dir.txt.gz",
+              "s6-c1-rs": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-browsing/s6-c1-rs.txt.gz",
+              "s6-c2-asg": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-browsing/s6-c2-asg.txt.gz",
+              "s6-c3-jdg": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-browsing/s6-c3-jdg.txt.gz",
+              "s6-c4-asg": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-browsing/s6-c4-asg.txt.gz",
+              "s6-c4-gen": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-browsing/s6-c4-gen.txt.gz",
+              "s6-c4-jdg": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-browsing/s6-c4-jdg.txt.gz",
+              "s6-c5-rs": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-browsing/s6-c5-rs.txt.gz"
+            },
+            "stored": 1076
+          },
+          "confirmation": {
+            "summary": {
+              "stored": 396,
+              "errors": 0,
+              "by_use_case": {
+                "s6-c1-dir": {
+                  "calls": 1,
+                  "input_tokens": 647,
+                  "output_tokens": 27,
+                  "cached_tokens": 0,
+                  "created_cache_tokens": 640,
+                  "elapsed_sec": 0.427
+                },
+                "s6-c1-rs": {
+                  "calls": 49,
+                  "input_tokens": 8291,
+                  "output_tokens": 103,
+                  "cached_tokens": 6080,
+                  "created_cache_tokens": 1760,
+                  "elapsed_sec": 7.851
+                },
+                "s6-c2-asg": {
+                  "calls": 31,
+                  "input_tokens": 5539,
+                  "output_tokens": 64,
+                  "cached_tokens": 3712,
+                  "created_cache_tokens": 1248,
+                  "elapsed_sec": 4.64
+                },
+                "s6-c3-jdg": {
+                  "calls": 5,
+                  "input_tokens": 4031,
+                  "output_tokens": 168,
+                  "cached_tokens": 384,
+                  "created_cache_tokens": 3584,
+                  "elapsed_sec": 7.346
+                },
+                "s6-c4-asg": {
+                  "calls": 286,
+                  "input_tokens": 51916,
+                  "output_tokens": 590,
+                  "cached_tokens": 39296,
+                  "created_cache_tokens": 8192,
+                  "elapsed_sec": 119.666
+                },
+                "s6-c4-gen": {
+                  "calls": 10,
+                  "input_tokens": 12746,
+                  "output_tokens": 194,
+                  "cached_tokens": 5600,
+                  "created_cache_tokens": 7040,
+                  "elapsed_sec": 9.664
+                },
+                "s6-c4-jdg": {
+                  "calls": 6,
+                  "input_tokens": 4186,
+                  "output_tokens": 200,
+                  "cached_tokens": 768,
+                  "created_cache_tokens": 3264,
+                  "elapsed_sec": 6.15
+                },
+                "s6-c5-rs": {
+                  "calls": 8,
+                  "input_tokens": 1387,
+                  "output_tokens": 17,
+                  "cached_tokens": 992,
+                  "created_cache_tokens": 288,
+                  "elapsed_sec": 1.082
+                }
+              }
+            },
+            "dir": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-confirmation",
+            "paths": {
+              "s6-c1-dir": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-confirmation/s6-c1-dir.txt.gz",
+              "s6-c1-rs": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-confirmation/s6-c1-rs.txt.gz",
+              "s6-c2-asg": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-confirmation/s6-c2-asg.txt.gz",
+              "s6-c3-jdg": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-confirmation/s6-c3-jdg.txt.gz",
+              "s6-c4-asg": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-confirmation/s6-c4-asg.txt.gz",
+              "s6-c4-gen": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-confirmation/s6-c4-gen.txt.gz",
+              "s6-c4-jdg": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-confirmation/s6-c4-jdg.txt.gz",
+              "s6-c5-rs": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-confirmation/s6-c5-rs.txt.gz"
+            },
+            "stored": 396
+          },
+          "experience": {
+            "summary": {
+              "stored": 184,
+              "errors": 0,
+              "by_use_case": {
+                "s6-c1-dir": {
+                  "calls": 1,
+                  "input_tokens": 451,
+                  "output_tokens": 30,
+                  "cached_tokens": 288,
+                  "created_cache_tokens": 160,
+                  "elapsed_sec": 0.625
+                },
+                "s6-c1-rs": {
+                  "calls": 20,
+                  "input_tokens": 3430,
+                  "output_tokens": 42,
+                  "cached_tokens": 3072,
+                  "created_cache_tokens": 128,
+                  "elapsed_sec": 2.958
+                },
+                "s6-c2-asg": {
+                  "calls": 54,
+                  "input_tokens": 9800,
+                  "output_tokens": 109,
+                  "cached_tokens": 6848,
+                  "created_cache_tokens": 1792,
+                  "elapsed_sec": 9.434
+                },
+                "s6-c3-jdg": {
+                  "calls": 3,
+                  "input_tokens": 2890,
+                  "output_tokens": 119,
+                  "cached_tokens": 384,
+                  "created_cache_tokens": 2432,
+                  "elapsed_sec": 4.903
+                },
+                "s6-c4-asg": {
+                  "calls": 97,
+                  "input_tokens": 17821,
+                  "output_tokens": 198,
+                  "cached_tokens": 12832,
+                  "created_cache_tokens": 2944,
+                  "elapsed_sec": 70.898
+                },
+                "s6-c4-gen": {
+                  "calls": 3,
+                  "input_tokens": 3966,
+                  "output_tokens": 55,
+                  "cached_tokens": 1824,
+                  "created_cache_tokens": 2112,
+                  "elapsed_sec": 3.212
+                },
+                "s6-c4-jdg": {
+                  "calls": 3,
+                  "input_tokens": 2137,
+                  "output_tokens": 84,
+                  "cached_tokens": 384,
+                  "created_cache_tokens": 1696,
+                  "elapsed_sec": 2.479
+                },
+                "s6-c5-rs": {
+                  "calls": 3,
+                  "input_tokens": 542,
+                  "output_tokens": 6,
+                  "cached_tokens": 384,
+                  "created_cache_tokens": 96,
+                  "elapsed_sec": 0.528
+                }
+              }
+            },
+            "dir": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-experience",
+            "paths": {
+              "s6-c1-dir": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-experience/s6-c1-dir.txt.gz",
+              "s6-c1-rs": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-experience/s6-c1-rs.txt.gz",
+              "s6-c2-asg": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-experience/s6-c2-asg.txt.gz",
+              "s6-c3-jdg": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-experience/s6-c3-jdg.txt.gz",
+              "s6-c4-asg": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-experience/s6-c4-asg.txt.gz",
+              "s6-c4-gen": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-experience/s6-c4-gen.txt.gz",
+              "s6-c4-jdg": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-experience/s6-c4-jdg.txt.gz",
+              "s6-c5-rs": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-experience/s6-c5-rs.txt.gz"
+            },
+            "stored": 184
+          },
+          "initial_exploration": {
+            "summary": {
+              "stored": 805,
+              "errors": 0,
+              "by_use_case": {
+                "s6-c1-dir": {
+                  "calls": 1,
+                  "input_tokens": 882,
+                  "output_tokens": 36,
+                  "cached_tokens": 288,
+                  "created_cache_tokens": 576,
+                  "elapsed_sec": 0.659
+                },
+                "s6-c1-rs": {
+                  "calls": 76,
+                  "input_tokens": 13497,
+                  "output_tokens": 165,
+                  "cached_tokens": 12032,
+                  "created_cache_tokens": 128,
+                  "elapsed_sec": 7.954
+                },
+                "s6-c2-asg": {
+                  "calls": 56,
+                  "input_tokens": 10377,
+                  "output_tokens": 114,
+                  "cached_tokens": 7168,
+                  "created_cache_tokens": 1856,
+                  "elapsed_sec": 12.777
+                },
+                "s6-c3-jdg": {
+                  "calls": 6,
+                  "input_tokens": 5711,
+                  "output_tokens": 224,
+                  "cached_tokens": 768,
+                  "created_cache_tokens": 4864,
+                  "elapsed_sec": 9.109
+                },
+                "s6-c4-asg": {
+                  "calls": 630,
+                  "input_tokens": 114933,
+                  "output_tokens": 1304,
+                  "cached_tokens": 84256,
+                  "created_cache_tokens": 20800,
+                  "elapsed_sec": 248.038
+                },
+                "s6-c4-gen": {
+                  "calls": 16,
+                  "input_tokens": 20905,
+                  "output_tokens": 266,
+                  "cached_tokens": 9952,
+                  "created_cache_tokens": 10720,
+                  "elapsed_sec": 14.01
+                },
+                "s6-c4-jdg": {
+                  "calls": 10,
+                  "input_tokens": 9744,
+                  "output_tokens": 419,
+                  "cached_tokens": 1280,
+                  "created_cache_tokens": 8288,
+                  "elapsed_sec": 15.055
+                },
+                "s6-c5-rs": {
+                  "calls": 10,
+                  "input_tokens": 1828,
+                  "output_tokens": 21,
+                  "cached_tokens": 1216,
+                  "created_cache_tokens": 384,
+                  "elapsed_sec": 1.621
+                }
+              }
+            },
+            "dir": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-initial_exploration",
+            "paths": {
+              "s6-c1-dir": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-initial_exploration/s6-c1-dir.txt.gz",
+              "s6-c1-rs": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-initial_exploration/s6-c1-rs.txt.gz",
+              "s6-c2-asg": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-initial_exploration/s6-c2-asg.txt.gz",
+              "s6-c3-jdg": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-initial_exploration/s6-c3-jdg.txt.gz",
+              "s6-c4-asg": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-initial_exploration/s6-c4-asg.txt.gz",
+              "s6-c4-gen": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-initial_exploration/s6-c4-gen.txt.gz",
+              "s6-c4-jdg": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-initial_exploration/s6-c4-jdg.txt.gz",
+              "s6-c5-rs": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-initial_exploration/s6-c5-rs.txt.gz"
+            },
+            "stored": 805
+          },
+          "own_and_service": {
+            "summary": {
+              "stored": 47,
+              "errors": 0,
+              "by_use_case": {
+                "s6-c1-dir": {
+                  "calls": 1,
+                  "input_tokens": 523,
+                  "output_tokens": 28,
+                  "cached_tokens": 0,
+                  "created_cache_tokens": 512,
+                  "elapsed_sec": 0.537
+                },
+                "s6-c1-rs": {
+                  "calls": 28,
+                  "input_tokens": 4766,
+                  "output_tokens": 59,
+                  "cached_tokens": 3584,
+                  "created_cache_tokens": 896,
+                  "elapsed_sec": 4.575
+                },
+                "s6-c2-asg": {
+                  "calls": 2,
+                  "input_tokens": 360,
+                  "output_tokens": 4,
+                  "cached_tokens": 224,
+                  "created_cache_tokens": 96,
+                  "elapsed_sec": 0.353
+                },
+                "s6-c3-jdg": {
+                  "calls": 1,
+                  "input_tokens": 446,
+                  "output_tokens": 31,
+                  "cached_tokens": 128,
+                  "created_cache_tokens": 288,
+                  "elapsed_sec": 1.324
+                },
+                "s6-c4-asg": {
+                  "calls": 12,
+                  "input_tokens": 2326,
+                  "output_tokens": 29,
+                  "cached_tokens": 1600,
+                  "created_cache_tokens": 576,
+                  "elapsed_sec": 6.438
+                },
+                "s6-c4-gen": {
+                  "calls": 1,
+                  "input_tokens": 945,
+                  "output_tokens": 24,
+                  "cached_tokens": 0,
+                  "created_cache_tokens": 928,
+                  "elapsed_sec": 0.724
+                },
+                "s6-c5-rs": {
+                  "calls": 2,
+                  "input_tokens": 350,
+                  "output_tokens": 5,
+                  "cached_tokens": 224,
+                  "created_cache_tokens": 96,
+                  "elapsed_sec": 2.377
+                }
+              }
+            },
+            "dir": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-own_and_service",
+            "paths": {
+              "s6-c1-dir": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-own_and_service/s6-c1-dir.txt.gz",
+              "s6-c1-rs": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-own_and_service/s6-c1-rs.txt.gz",
+              "s6-c2-asg": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-own_and_service/s6-c2-asg.txt.gz",
+              "s6-c3-jdg": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-own_and_service/s6-c3-jdg.txt.gz",
+              "s6-c4-asg": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-own_and_service/s6-c4-asg.txt.gz",
+              "s6-c4-gen": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-own_and_service/s6-c4-gen.txt.gz",
+              "s6-c5-rs": "/results/jf-cache/73c6ddf8-ceb1-4c65-a355-f7d61d560bc8/llm-usage/6-own_and_service/s6-c5-rs.txt.gz"
+            },
+            "stored": 47
+          }
+        },
+        "llm_failures": {
+          "summary": {
+            "stored": 0,
+            "truncated": false,
+            "by_reason": {},
+            "by_use_case": {}
+          }
+        },
+        "use_case_concurrency": {
+          "jobs": 1,
+          "use_cases": {
+            "s6-c1-dir": 20,
+            "s6-c1-rs": 20,
+            "s6-c2-asg": 20,
+            "s6-c3-jdg": 20,
+            "s6-c4-jdg": 20,
+            "s6-c4-gen": 20,
+            "s6-c4-asg": 20,
+            "s6-c5-rs": 20
+          }
+        },
+        "metrics": {
+          "quality": {
+            "topics": 138,
+            "cycle_topics": 0,
+            "cycle_ratio": 0.0,
+            "cycle_examples": []
+          }
+        }
+      }
+    }
+  },
+  "errors": {
+    "s3": 0,
+    "s4": 0,
+    "s5": 0
+  },
+  "files": {
+    "s1_keyword_expansion": 2302,
+    "s2_relevance": 2302,
+    "s3_attributes": 1381,
+    "s4_brand": 1381,
+    "s5_cdj": 1381,
+    "s6_topics": 1381
+  }
+}

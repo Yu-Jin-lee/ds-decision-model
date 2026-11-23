@@ -1,0 +1,1427 @@
+{
+  "job_id": "28eaf8be-45ad-44b0-9510-28b54295e951",
+  "country": "jp",
+  "queries": [
+    "フェンディ",
+    "fendi"
+  ],
+  "input_mode": "seed",
+  "started_at": "2026-11-10T13:06:05.912907+00:00",
+  "volume_month": "2026-09",
+  "graph_build_date": "2026-11-09",
+  "status": "DONE",
+  "finished_at": "2026-11-10T13:13:37.427562+00:00",
+  "industry": "ファッション小物／アクセサリー",
+  "category_2depth": [
+    "ラグジュアリーブランドのバッグ・革製品"
+  ],
+  "steps": {
+    "1": {
+      "name": "S1-키워드 확장",
+      "finished_at": "2026-11-10T13:07:20.017974+00:00",
+      "stats": {
+        "category_1depth": "ファッション小物／アクセサリー",
+        "category_2depth": [
+          "ラグジュアリーブランドのバッグ・革製品"
+        ],
+        "seeds": 2,
+        "substeps": {
+          "1": null,
+          "2": 32,
+          "3": 229,
+          "4": 9062,
+          "5": 8865,
+          "6": 8595
+        },
+        "keywords": 8595,
+        "serp_snippets": 8595,
+        "keyword_elapsed_count": 0,
+        "volume_month": "2026-09",
+        "graph_build_date": "2026-11-09",
+        "llm_stats": {
+          "calls": 5,
+          "retries": 0,
+          "failures": 0,
+          "successes": 5,
+          "validation_attempts": 5,
+          "validation_failures": 0,
+          "retries_by_reason": {},
+          "failures_by_reason": {},
+          "validation_failures_by_reason": {},
+          "finish_by_reason": {
+            "stop": 5
+          },
+          "prompt_tokens": 5392,
+          "completion_tokens": 454,
+          "cached_tokens": 2976,
+          "created_cache_tokens": 2304,
+          "usage_samples": 5,
+          "llm_elapsed_sec": 9.835,
+          "elapsed_samples": 5,
+          "avg_call_sec": 1.967
+        },
+        "llm_failures": {
+          "summary": {
+            "stored": 0,
+            "truncated": false,
+            "by_reason": {},
+            "by_use_case": {}
+          }
+        },
+        "use_case_concurrency": {
+          "jobs": 1,
+          "use_cases": {
+            "s1-md": 1,
+            "s1-cep": 64
+          }
+        },
+        "llm_calls": {
+          "summary": {
+            "stored": 5,
+            "errors": 0,
+            "by_use_case": {
+              "s1-cep": {
+                "calls": 5,
+                "input_tokens": 5392,
+                "output_tokens": 454,
+                "cached_tokens": 2976,
+                "created_cache_tokens": 2304,
+                "elapsed_sec": 9.835
+              }
+            }
+          },
+          "dir": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/1",
+          "paths": {
+            "s1-cep": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/1/s1-cep.txt.gz"
+          },
+          "stored": 5
+        }
+      }
+    },
+    "2": {
+      "name": "S2-유무관 분류",
+      "finished_at": "2026-11-10T13:08:59.724365+00:00",
+      "stats": {
+        "seed_passthrough": 0,
+        "cep": {
+          "total": 272,
+          "relevant": 134,
+          "irrelevant": 138,
+          "unknown": 0,
+          "batches": 272,
+          "elapsed_sec": 2.37
+        },
+        "span": {
+          "total": 8388,
+          "relevant": 4993,
+          "irrelevant": 3395,
+          "unknown": 0,
+          "batches": 8388,
+          "elapsed_sec": 93.19
+        },
+        "relevant_total": 5106,
+        "keyword_results_count": 8660,
+        "llm_stats": {
+          "calls": 8660,
+          "retries": 0,
+          "failures": 0,
+          "successes": 8660,
+          "validation_attempts": 8660,
+          "validation_failures": 0,
+          "retries_by_reason": {},
+          "failures_by_reason": {},
+          "validation_failures_by_reason": {},
+          "finish_by_reason": {
+            "stop": 8660
+          },
+          "prompt_tokens": 16848960,
+          "completion_tokens": 25229,
+          "cached_tokens": 14888416,
+          "created_cache_tokens": 1825952,
+          "usage_samples": 8660,
+          "llm_elapsed_sec": 6036.256,
+          "elapsed_samples": 8660,
+          "avg_call_sec": 0.697
+        },
+        "llm_failures": {
+          "summary": {
+            "stored": 0,
+            "truncated": false,
+            "by_reason": {},
+            "by_use_case": {}
+          }
+        },
+        "use_case_concurrency": {
+          "jobs": 1,
+          "use_cases": {
+            "s2-cep": 64,
+            "s2-span": 64
+          }
+        },
+        "llm_calls": {
+          "summary": {
+            "stored": 8660,
+            "errors": 0,
+            "by_use_case": {
+              "s2-cep": {
+                "calls": 272,
+                "input_tokens": 170441,
+                "output_tokens": 1467,
+                "cached_tokens": 129056,
+                "created_cache_tokens": 36320,
+                "elapsed_sec": 134.87
+              },
+              "s2-span": {
+                "calls": 8388,
+                "input_tokens": 16678519,
+                "output_tokens": 23762,
+                "cached_tokens": 14759360,
+                "created_cache_tokens": 1789632,
+                "elapsed_sec": 5901.386
+              }
+            }
+          },
+          "dir": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/2",
+          "paths": {
+            "s2-cep": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/2/s2-cep.txt.gz",
+            "s2-span": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/2/s2-span.txt.gz"
+          },
+          "stored": 8660
+        },
+        "metrics": {
+          "quality": {
+            "classified": 8660,
+            "relevant": 5127,
+            "relevant_ratio": 0.592,
+            "cep_relevant_ratio": 0.4926,
+            "span_relevant_ratio": 0.5953
+          }
+        }
+      }
+    },
+    "3": {
+      "name": "S3-검색어 속성 추출",
+      "finished_at": "2026-11-10T13:10:16.711090+00:00",
+      "stats": {
+        "total": 5106,
+        "success": 5100,
+        "error": 6,
+        "serp_hit": 5106,
+        "elapsed_sec": 75.08,
+        "llm_stats": {
+          "calls": 5118,
+          "retries": 12,
+          "failures": 0,
+          "successes": 5106,
+          "validation_attempts": 5118,
+          "validation_failures": 18,
+          "retries_by_reason": {
+            "validation": 12
+          },
+          "failures_by_reason": {},
+          "validation_failures_by_reason": {
+            "UnknownTokenError": 18
+          },
+          "finish_by_reason": {
+            "stop": 5118
+          },
+          "prompt_tokens": 6249215,
+          "completion_tokens": 53747,
+          "cached_tokens": 5077888,
+          "created_cache_tokens": 1092800,
+          "usage_samples": 5118,
+          "llm_elapsed_sec": 4779.274,
+          "elapsed_samples": 5106,
+          "avg_call_sec": 0.936
+        },
+        "llm_failures": {
+          "summary": {
+            "stored": 0,
+            "truncated": false,
+            "by_reason": {},
+            "by_use_case": {}
+          }
+        },
+        "use_case_concurrency": {
+          "jobs": 1,
+          "use_cases": {
+            "s3-tok": 64
+          }
+        },
+        "llm_calls": {
+          "summary": {
+            "stored": 5106,
+            "errors": 0,
+            "by_use_case": {
+              "s3-tok": {
+                "calls": 5106,
+                "input_tokens": 6249215,
+                "output_tokens": 53747,
+                "cached_tokens": 5077888,
+                "created_cache_tokens": 1092800,
+                "elapsed_sec": 4779.274
+              }
+            }
+          },
+          "dir": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/3",
+          "paths": {
+            "s3-tok": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/3/s3-tok.txt.gz"
+          },
+          "stored": 5106
+        },
+        "metrics": {
+          "quality": {
+            "rows": 5100,
+            "multi_attr_rows": 0,
+            "multi_attr_row_ratio": 0.0,
+            "tokens": 2273,
+            "multi_attr_tokens": 202,
+            "multi_attr_token_ratio": 0.0889,
+            "multi_attr_examples": [
+              "ブランド(Intent 28 · Target 23)",
+              "メンズ(Intent 235 · Target 23)",
+              "vintage(Target 14 · Intent 13)",
+              "black(Target 11 · Intent 10)",
+              "ハイブランド(Target 19 · Intent 8)"
+            ],
+            "site_rows": 68,
+            "site_leading_rows": 1,
+            "site_leading_ratio": 0.0147,
+            "site_leading_examples": [
+              "fan di fendi acqua"
+            ]
+          }
+        }
+      }
+    },
+    "4": {
+      "name": "S4-브랜드/제네릭 분류",
+      "finished_at": "2026-11-10T13:11:35.495338+00:00",
+      "stats": {
+        "total": 5100,
+        "success": 5100,
+        "error": 0,
+        "serp_hit": 5100,
+        "elapsed_sec": 66.08,
+        "llm_stats": {
+          "calls": 5438,
+          "retries": 0,
+          "failures": 0,
+          "successes": 5438,
+          "validation_attempts": 5438,
+          "validation_failures": 0,
+          "retries_by_reason": {},
+          "failures_by_reason": {},
+          "validation_failures_by_reason": {},
+          "finish_by_reason": {
+            "stop": 5438
+          },
+          "prompt_tokens": 4838560,
+          "completion_tokens": 32435,
+          "cached_tokens": 3428640,
+          "created_cache_tokens": 1325152,
+          "usage_samples": 5438,
+          "llm_elapsed_sec": 4397.016,
+          "elapsed_samples": 5438,
+          "avg_call_sec": 0.809
+        },
+        "llm_failures": {
+          "summary": {
+            "stored": 0,
+            "truncated": false,
+            "by_reason": {},
+            "by_use_case": {}
+          }
+        },
+        "use_case_concurrency": {
+          "jobs": 1,
+          "use_cases": {
+            "s4-bg": 64,
+            "s4b-grp": 1,
+            "s4b-asg": 64
+          }
+        },
+        "llm_calls": {
+          "summary": {
+            "stored": 5438,
+            "errors": 0,
+            "by_use_case": {
+              "s4-bg": {
+                "calls": 5100,
+                "input_tokens": 4588854,
+                "output_tokens": 31729,
+                "cached_tokens": 3267840,
+                "created_cache_tokens": 1241728,
+                "elapsed_sec": 4196.501
+              },
+              "s4b-asg": {
+                "calls": 337,
+                "input_tokens": 245709,
+                "output_tokens": 674,
+                "cached_tokens": 160800,
+                "created_cache_tokens": 79456,
+                "elapsed_sec": 199.614
+              },
+              "s4b-grp": {
+                "calls": 1,
+                "input_tokens": 3997,
+                "output_tokens": 32,
+                "cached_tokens": 0,
+                "created_cache_tokens": 3968,
+                "elapsed_sec": 0.901
+              }
+            }
+          },
+          "dir": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/4",
+          "paths": {
+            "s4-bg": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/4/s4-bg.txt.gz",
+            "s4b-asg": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/4/s4b-asg.txt.gz",
+            "s4b-grp": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/4/s4b-grp.txt.gz"
+          },
+          "stored": 5438
+        }
+      }
+    },
+    "5": {
+      "name": "S5-CDJ 단계 분류",
+      "finished_at": "2026-11-10T13:12:34.255180+00:00",
+      "stats": {
+        "total": 5100,
+        "success": 5100,
+        "error": 0,
+        "serp_hit": 5100,
+        "elapsed_sec": 55.85,
+        "llm_stats": {
+          "calls": 5100,
+          "retries": 0,
+          "failures": 0,
+          "successes": 5100,
+          "validation_attempts": 5100,
+          "validation_failures": 0,
+          "retries_by_reason": {},
+          "failures_by_reason": {},
+          "validation_failures_by_reason": {},
+          "finish_by_reason": {
+            "stop": 5100
+          },
+          "prompt_tokens": 5368154,
+          "completion_tokens": 10200,
+          "cached_tokens": 4020064,
+          "created_cache_tokens": 1269728,
+          "usage_samples": 5100,
+          "llm_elapsed_sec": 3517.969,
+          "elapsed_samples": 5100,
+          "avg_call_sec": 0.69
+        },
+        "llm_failures": {
+          "summary": {
+            "stored": 0,
+            "truncated": false,
+            "by_reason": {},
+            "by_use_case": {}
+          }
+        },
+        "use_case_concurrency": {
+          "jobs": 1,
+          "use_cases": {
+            "s5-cdj": 64
+          }
+        },
+        "llm_calls": {
+          "summary": {
+            "stored": 5100,
+            "errors": 0,
+            "by_use_case": {
+              "s5-cdj": {
+                "calls": 5100,
+                "input_tokens": 5368154,
+                "output_tokens": 10200,
+                "cached_tokens": 4020064,
+                "created_cache_tokens": 1269728,
+                "elapsed_sec": 3517.969
+              }
+            }
+          },
+          "dir": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/5",
+          "paths": {
+            "s5-cdj": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/5/s5-cdj.txt.gz"
+          },
+          "stored": 5100
+        },
+        "metrics": {
+          "quality": {
+            "rows": 5100,
+            "other_rows": 21,
+            "other_ratio": 0.0041,
+            "intent_groups": 358,
+            "intent_split_groups": 36,
+            "intent_split_ratio": 0.1006,
+            "intent_split_examples": [
+              "fendi アクセサリー メンズ(Browsing 174) / fendi 伊勢丹 メンズ(Confirmation 7)",
+              "fendi バケット ハット コーデ(Experience 21) / fendi キャップ コーデ(Browsing 6)",
+              "fendi バッグ 新作(Browsing 16) / fendi ピーカブー 新作(Confirmation 6)",
+              "fendi サイズ感(Experience 6) / fendi リング サイズ感(Browsing 5)",
+              "fendi おにぎり 公式(Confirmation 12) / fendi 公式(Browsing 4)"
+            ],
+            "target_intent_groups": 141,
+            "target_intent_split_groups": 5,
+            "target_intent_split_ratio": 0.0355,
+            "target_intent_split_examples": [
+              "fendi ノベルティ ポーチ(Experience 1) / fendi ポーチ ノベルティ(Confirmation 1)",
+              "fendi長財布 レディース(Experience 1) / レディースfendi 長財布(Browsing 1)",
+              "フェンディ メンズ(Browsing 2) / フェンディ メンズ バイマ(Confirmation 1)",
+              "フェンディ 公式 バッグ(Confirmation 2) / フェンディ 公式(Browsing 1)",
+              "フェンディ 財布 メンズ 楽天(Confirmation 1) / フェンディ財布 メンズ(Browsing 1)"
+            ],
+            "same_attrs_groups": 134,
+            "same_attrs_split_groups": 2,
+            "same_attrs_split_ratio": 0.0149,
+            "same_attrs_split_examples": [
+              "fendi ノベルティ ポーチ(Experience 1) / fendi ポーチ ノベルティ(Confirmation 1)",
+              "fendi長財布 レディース(Experience 1) / レディースfendi 長財布(Browsing 1)"
+            ]
+          }
+        }
+      }
+    },
+    "6": {
+      "name": "S6-토픽 클러스터링",
+      "finished_at": "2026-11-10T13:13:37.032977+00:00",
+      "stats": {
+        "stages": [
+          "browsing",
+          "confirmation",
+          "experience",
+          "initial_exploration",
+          "own_and_service"
+        ],
+        "topics": {
+          "initial_exploration": {
+            "d1_topics": 17,
+            "max_depth": 3,
+            "assigned": 184,
+            "unassigned": 0,
+            "roots": [
+              {
+                "label": "ブランド一覧",
+                "keywords": 37
+              },
+              {
+                "label": "セール情報",
+                "keywords": 19
+              },
+              {
+                "label": "店舗情報",
+                "keywords": 21
+              },
+              {
+                "label": "格付けと評価",
+                "keywords": 13
+              },
+              {
+                "label": "アイテム",
+                "keywords": 28
+              },
+              {
+                "label": "品質と素材",
+                "keywords": 17
+              },
+              {
+                "label": "活用シーン",
+                "keywords": 14
+              },
+              {
+                "label": "メンズ",
+                "keywords": 4
+              },
+              {
+                "label": "レディース",
+                "keywords": 2
+              },
+              {
+                "label": "価格と購入",
+                "keywords": 6
+              },
+              {
+                "label": "口コミと評判",
+                "keywords": 6
+              },
+              {
+                "label": "買取と相場",
+                "keywords": 3
+              },
+              {
+                "label": "時期と季節",
+                "keywords": 3
+              },
+              {
+                "label": "通販と代購",
+                "keywords": 6
+              },
+              {
+                "label": "プレゼント",
+                "keywords": 2
+              },
+              {
+                "label": "資産価値",
+                "keywords": 2
+              },
+              {
+                "label": "その他",
+                "keywords": 1
+              }
+            ]
+          },
+          "browsing": {
+            "d1_topics": 16,
+            "max_depth": 4,
+            "assigned": 3385,
+            "unassigned": 0,
+            "roots": [
+              {
+                "label": "ブランド概要",
+                "keywords": 127
+              },
+              {
+                "label": "コレクションと新作",
+                "keywords": 270
+              },
+              {
+                "label": "商品情報",
+                "keywords": 122
+              },
+              {
+                "label": "サイズと仕様",
+                "keywords": 93
+              },
+              {
+                "label": "カラーと柄",
+                "keywords": 238
+              },
+              {
+                "label": "素材と特徴",
+                "keywords": 81
+              },
+              {
+                "label": "アイテムの種類",
+                "keywords": 1631
+              },
+              {
+                "label": "メンズとレディース",
+                "keywords": 378
+              },
+              {
+                "label": "ギフトとプレゼント",
+                "keywords": 17
+              },
+              {
+                "label": "店舗と場所",
+                "keywords": 105
+              },
+              {
+                "label": "公式とサイト",
+                "keywords": 29
+              },
+              {
+                "label": "芸能人と着用",
+                "keywords": 170
+              },
+              {
+                "label": "歴史と年代",
+                "keywords": 53
+              },
+              {
+                "label": "使い方とコーディネート",
+                "keywords": 24
+              },
+              {
+                "label": "価格と価値",
+                "keywords": 11
+              },
+              {
+                "label": "その他",
+                "keywords": 36
+              }
+            ]
+          },
+          "experience": {
+            "d1_topics": 15,
+            "max_depth": 3,
+            "assigned": 340,
+            "unassigned": 0,
+            "roots": [
+              {
+                "label": "人気とランキング",
+                "keywords": 35
+              },
+              {
+                "label": "コーディネート",
+                "keywords": 23
+              },
+              {
+                "label": "真贋と見分け方",
+                "keywords": 49
+              },
+              {
+                "label": "口コミと評判",
+                "keywords": 55
+              },
+              {
+                "label": "プレゼント",
+                "keywords": 18
+              },
+              {
+                "label": "メンズとレディース",
+                "keywords": 16
+              },
+              {
+                "label": "年齢層",
+                "keywords": 24
+              },
+              {
+                "label": "流行と印象",
+                "keywords": 23
+              },
+              {
+                "label": "サイズ感",
+                "keywords": 10
+              },
+              {
+                "label": "品質と耐久性",
+                "keywords": 11
+              },
+              {
+                "label": "ブランドランク",
+                "keywords": 6
+              },
+              {
+                "label": "価格と購入",
+                "keywords": 14
+              },
+              {
+                "label": "似ているブランド",
+                "keywords": 9
+              },
+              {
+                "label": "比較と違い",
+                "keywords": 23
+              },
+              {
+                "label": "芸能人と愛用者",
+                "keywords": 24
+              }
+            ]
+          },
+          "confirmation": {
+            "d1_topics": 14,
+            "max_depth": 4,
+            "assigned": 1068,
+            "unassigned": 0,
+            "roots": [
+              {
+                "label": "中古品と新品",
+                "keywords": 113
+              },
+              {
+                "label": "アウトレット",
+                "keywords": 139
+              },
+              {
+                "label": "価格と定価",
+                "keywords": 114
+              },
+              {
+                "label": "セールと福袋",
+                "keywords": 40
+              },
+              {
+                "label": "買取と相場",
+                "keywords": 46
+              },
+              {
+                "label": "公式と通販",
+                "keywords": 70
+              },
+              {
+                "label": "メンズとレディース",
+                "keywords": 17
+              },
+              {
+                "label": "海外と免税店",
+                "keywords": 44
+              },
+              {
+                "label": "在庫と予約",
+                "keywords": 15
+              },
+              {
+                "label": "ギフトとラッピング",
+                "keywords": 11
+              },
+              {
+                "label": "支払いと領収書",
+                "keywords": 8
+              },
+              {
+                "label": "店舗と場所",
+                "keywords": 273
+              },
+              {
+                "label": "地域と駅",
+                "keywords": 171
+              },
+              {
+                "label": "その他",
+                "keywords": 7
+              }
+            ]
+          },
+          "own_and_service": {
+            "d1_topics": 11,
+            "max_depth": 3,
+            "assigned": 102,
+            "unassigned": 0,
+            "roots": [
+              {
+                "label": "修理とメンテナンス",
+                "keywords": 36
+              },
+              {
+                "label": "使い方と扱い方",
+                "keywords": 10
+              },
+              {
+                "label": "店舗と正規店",
+                "keywords": 7
+              },
+              {
+                "label": "価格と査定",
+                "keywords": 2
+              },
+              {
+                "label": "返品と交換",
+                "keywords": 7
+              },
+              {
+                "label": "保証とアフターサービス",
+                "keywords": 6
+              },
+              {
+                "label": "真贋鑑定",
+                "keywords": 4
+              },
+              {
+                "label": "売却と買取",
+                "keywords": 3
+              },
+              {
+                "label": "サイズと仕様",
+                "keywords": 2
+              },
+              {
+                "label": "シリアルナンバーの見方",
+                "keywords": 12
+              },
+              {
+                "label": "問い合わせとサポート",
+                "keywords": 13
+              }
+            ]
+          }
+        },
+        "skipped_small": {},
+        "skipped_non_cdj": {
+          "other": 21
+        },
+        "concurrency": {
+          "sllm_concurrency": 64,
+          "sllm_assign_concurrency": 64
+        },
+        "llm_stats": {
+          "browsing": {
+            "calls": 10162,
+            "retries": 6,
+            "failures": 0,
+            "successes": 10156,
+            "validation_attempts": 10162,
+            "validation_failures": 7,
+            "retries_by_reason": {
+              "validation": 6
+            },
+            "failures_by_reason": {},
+            "validation_failures_by_reason": {
+              "PathRepeatError": 7
+            },
+            "finish_by_reason": {
+              "stop": 10162
+            },
+            "prompt_tokens": 2158781,
+            "completion_tokens": 25384,
+            "cached_tokens": 1522208,
+            "created_cache_tokens": 471712,
+            "usage_samples": 10162,
+            "llm_elapsed_sec": 7451.927,
+            "elapsed_samples": 10156,
+            "avg_call_sec": 0.734
+          },
+          "confirmation": {
+            "calls": 1670,
+            "retries": 4,
+            "failures": 0,
+            "successes": 1666,
+            "validation_attempts": 1670,
+            "validation_failures": 5,
+            "retries_by_reason": {
+              "validation": 4
+            },
+            "failures_by_reason": {},
+            "validation_failures_by_reason": {
+              "PathRepeatError": 5
+            },
+            "finish_by_reason": {
+              "stop": 1670
+            },
+            "prompt_tokens": 395106,
+            "completion_tokens": 5172,
+            "cached_tokens": 270272,
+            "created_cache_tokens": 100032,
+            "usage_samples": 1670,
+            "llm_elapsed_sec": 1187.653,
+            "elapsed_samples": 1666,
+            "avg_call_sec": 0.713
+          },
+          "experience": {
+            "calls": 482,
+            "retries": 0,
+            "failures": 0,
+            "successes": 482,
+            "validation_attempts": 482,
+            "validation_failures": 0,
+            "retries_by_reason": {},
+            "failures_by_reason": {},
+            "validation_failures_by_reason": {},
+            "finish_by_reason": {
+              "stop": 482
+            },
+            "prompt_tokens": 119141,
+            "completion_tokens": 1795,
+            "cached_tokens": 77472,
+            "created_cache_tokens": 34496,
+            "usage_samples": 482,
+            "llm_elapsed_sec": 263.409,
+            "elapsed_samples": 482,
+            "avg_call_sec": 0.546
+          },
+          "initial_exploration": {
+            "calls": 375,
+            "retries": 0,
+            "failures": 0,
+            "successes": 375,
+            "validation_attempts": 375,
+            "validation_failures": 0,
+            "retries_by_reason": {},
+            "failures_by_reason": {},
+            "validation_failures_by_reason": {},
+            "finish_by_reason": {
+              "stop": 375
+            },
+            "prompt_tokens": 89450,
+            "completion_tokens": 1340,
+            "cached_tokens": 62848,
+            "created_cache_tokens": 22176,
+            "usage_samples": 375,
+            "llm_elapsed_sec": 294.473,
+            "elapsed_samples": 375,
+            "avg_call_sec": 0.785
+          },
+          "own_and_service": {
+            "calls": 138,
+            "retries": 0,
+            "failures": 0,
+            "successes": 138,
+            "validation_attempts": 138,
+            "validation_failures": 0,
+            "retries_by_reason": {},
+            "failures_by_reason": {},
+            "validation_failures_by_reason": {},
+            "finish_by_reason": {
+              "stop": 138
+            },
+            "prompt_tokens": 31764,
+            "completion_tokens": 500,
+            "cached_tokens": 20992,
+            "created_cache_tokens": 8256,
+            "usage_samples": 138,
+            "llm_elapsed_sec": 63.637,
+            "elapsed_samples": 138,
+            "avg_call_sec": 0.461
+          }
+        },
+        "llm_calls": {
+          "browsing": {
+            "summary": {
+              "stored": 10156,
+              "errors": 0,
+              "by_use_case": {
+                "s6-c1-dir": {
+                  "calls": 1,
+                  "input_tokens": 1450,
+                  "output_tokens": 58,
+                  "cached_tokens": 256,
+                  "created_cache_tokens": 1184,
+                  "elapsed_sec": 1.465
+                },
+                "s6-c1-rs": {
+                  "calls": 374,
+                  "input_tokens": 86058,
+                  "output_tokens": 853,
+                  "cached_tokens": 71616,
+                  "created_cache_tokens": 12160,
+                  "elapsed_sec": 204.837
+                },
+                "s6-c2-asg": {
+                  "calls": 2233,
+                  "input_tokens": 535922,
+                  "output_tokens": 4666,
+                  "cached_tokens": 428544,
+                  "created_cache_tokens": 71744,
+                  "elapsed_sec": 991.913
+                },
+                "s6-c3-jdg": {
+                  "calls": 14,
+                  "input_tokens": 25002,
+                  "output_tokens": 611,
+                  "cached_tokens": 1792,
+                  "created_cache_tokens": 23008,
+                  "elapsed_sec": 29.242
+                },
+                "s6-c4-asg": {
+                  "calls": 7260,
+                  "input_tokens": 1291011,
+                  "output_tokens": 15322,
+                  "cached_tokens": 940960,
+                  "created_cache_tokens": 227360,
+                  "elapsed_sec": 5914.152
+                },
+                "s6-c4-gen": {
+                  "calls": 68,
+                  "input_tokens": 104091,
+                  "output_tokens": 909,
+                  "cached_tokens": 44864,
+                  "created_cache_tokens": 58016,
+                  "elapsed_sec": 78.865
+                },
+                "s6-c4-jdg": {
+                  "calls": 76,
+                  "input_tokens": 84584,
+                  "output_tokens": 2651,
+                  "cached_tokens": 9600,
+                  "created_cache_tokens": 73696,
+                  "elapsed_sec": 205.928
+                },
+                "s6-c5-rs": {
+                  "calls": 130,
+                  "input_tokens": 30663,
+                  "output_tokens": 314,
+                  "cached_tokens": 24576,
+                  "created_cache_tokens": 4544,
+                  "elapsed_sec": 25.525
+                }
+              }
+            },
+            "dir": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-browsing",
+            "paths": {
+              "s6-c1-dir": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-browsing/s6-c1-dir.txt.gz",
+              "s6-c1-rs": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-browsing/s6-c1-rs.txt.gz",
+              "s6-c2-asg": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-browsing/s6-c2-asg.txt.gz",
+              "s6-c3-jdg": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-browsing/s6-c3-jdg.txt.gz",
+              "s6-c4-asg": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-browsing/s6-c4-asg.txt.gz",
+              "s6-c4-gen": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-browsing/s6-c4-gen.txt.gz",
+              "s6-c4-jdg": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-browsing/s6-c4-jdg.txt.gz",
+              "s6-c5-rs": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-browsing/s6-c5-rs.txt.gz"
+            },
+            "stored": 10156
+          },
+          "confirmation": {
+            "summary": {
+              "stored": 1666,
+              "errors": 0,
+              "by_use_case": {
+                "s6-c1-dir": {
+                  "calls": 1,
+                  "input_tokens": 2571,
+                  "output_tokens": 59,
+                  "cached_tokens": 256,
+                  "created_cache_tokens": 2304,
+                  "elapsed_sec": 1.948
+                },
+                "s6-c1-rs": {
+                  "calls": 295,
+                  "input_tokens": 66157,
+                  "output_tokens": 704,
+                  "cached_tokens": 56448,
+                  "created_cache_tokens": 6336,
+                  "elapsed_sec": 165.575
+                },
+                "s6-c2-asg": {
+                  "calls": 286,
+                  "input_tokens": 66951,
+                  "output_tokens": 634,
+                  "cached_tokens": 54720,
+                  "created_cache_tokens": 9344,
+                  "elapsed_sec": 129.644
+                },
+                "s6-c3-jdg": {
+                  "calls": 11,
+                  "input_tokens": 17294,
+                  "output_tokens": 382,
+                  "cached_tokens": 1408,
+                  "created_cache_tokens": 15648,
+                  "elapsed_sec": 31.613
+                },
+                "s6-c4-asg": {
+                  "calls": 982,
+                  "input_tokens": 175334,
+                  "output_tokens": 2008,
+                  "cached_tokens": 128160,
+                  "created_cache_tokens": 30080,
+                  "elapsed_sec": 705.559
+                },
+                "s6-c4-gen": {
+                  "calls": 26,
+                  "input_tokens": 37997,
+                  "output_tokens": 366,
+                  "cached_tokens": 18912,
+                  "created_cache_tokens": 18528,
+                  "elapsed_sec": 29.862
+                },
+                "s6-c4-jdg": {
+                  "calls": 27,
+                  "input_tokens": 19999,
+                  "output_tokens": 921,
+                  "cached_tokens": 3456,
+                  "created_cache_tokens": 16192,
+                  "elapsed_sec": 62.381
+                },
+                "s6-c5-rs": {
+                  "calls": 38,
+                  "input_tokens": 8803,
+                  "output_tokens": 98,
+                  "cached_tokens": 6912,
+                  "created_cache_tokens": 1600,
+                  "elapsed_sec": 61.07
+                }
+              }
+            },
+            "dir": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-confirmation",
+            "paths": {
+              "s6-c1-dir": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-confirmation/s6-c1-dir.txt.gz",
+              "s6-c1-rs": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-confirmation/s6-c1-rs.txt.gz",
+              "s6-c2-asg": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-confirmation/s6-c2-asg.txt.gz",
+              "s6-c3-jdg": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-confirmation/s6-c3-jdg.txt.gz",
+              "s6-c4-asg": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-confirmation/s6-c4-asg.txt.gz",
+              "s6-c4-gen": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-confirmation/s6-c4-gen.txt.gz",
+              "s6-c4-jdg": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-confirmation/s6-c4-jdg.txt.gz",
+              "s6-c5-rs": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-confirmation/s6-c5-rs.txt.gz"
+            },
+            "stored": 1666
+          },
+          "experience": {
+            "summary": {
+              "stored": 482,
+              "errors": 0,
+              "by_use_case": {
+                "s6-c1-dir": {
+                  "calls": 1,
+                  "input_tokens": 1227,
+                  "output_tokens": 60,
+                  "cached_tokens": 0,
+                  "created_cache_tokens": 1216,
+                  "elapsed_sec": 1.581
+                },
+                "s6-c1-rs": {
+                  "calls": 121,
+                  "input_tokens": 28336,
+                  "output_tokens": 295,
+                  "cached_tokens": 23584,
+                  "created_cache_tokens": 3520,
+                  "elapsed_sec": 47.941
+                },
+                "s6-c2-asg": {
+                  "calls": 9,
+                  "input_tokens": 2192,
+                  "output_tokens": 22,
+                  "cached_tokens": 1536,
+                  "created_cache_tokens": 480,
+                  "elapsed_sec": 5.636
+                },
+                "s6-c3-jdg": {
+                  "calls": 10,
+                  "input_tokens": 7625,
+                  "output_tokens": 334,
+                  "cached_tokens": 1152,
+                  "created_cache_tokens": 6368,
+                  "elapsed_sec": 21.38
+                },
+                "s6-c4-asg": {
+                  "calls": 280,
+                  "input_tokens": 50024,
+                  "output_tokens": 570,
+                  "cached_tokens": 35808,
+                  "created_cache_tokens": 9632,
+                  "elapsed_sec": 124.681
+                },
+                "s6-c4-gen": {
+                  "calls": 12,
+                  "input_tokens": 14864,
+                  "output_tokens": 126,
+                  "cached_tokens": 6688,
+                  "created_cache_tokens": 7968,
+                  "elapsed_sec": 11.225
+                },
+                "s6-c4-jdg": {
+                  "calls": 8,
+                  "input_tokens": 4842,
+                  "output_tokens": 291,
+                  "cached_tokens": 1024,
+                  "created_cache_tokens": 3744,
+                  "elapsed_sec": 18.257
+                },
+                "s6-c5-rs": {
+                  "calls": 41,
+                  "input_tokens": 10031,
+                  "output_tokens": 97,
+                  "cached_tokens": 7680,
+                  "created_cache_tokens": 1568,
+                  "elapsed_sec": 32.706
+                }
+              }
+            },
+            "dir": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-experience",
+            "paths": {
+              "s6-c1-dir": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-experience/s6-c1-dir.txt.gz",
+              "s6-c1-rs": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-experience/s6-c1-rs.txt.gz",
+              "s6-c2-asg": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-experience/s6-c2-asg.txt.gz",
+              "s6-c3-jdg": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-experience/s6-c3-jdg.txt.gz",
+              "s6-c4-asg": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-experience/s6-c4-asg.txt.gz",
+              "s6-c4-gen": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-experience/s6-c4-gen.txt.gz",
+              "s6-c4-jdg": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-experience/s6-c4-jdg.txt.gz",
+              "s6-c5-rs": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-experience/s6-c5-rs.txt.gz"
+            },
+            "stored": 482
+          },
+          "initial_exploration": {
+            "summary": {
+              "stored": 375,
+              "errors": 0,
+              "by_use_case": {
+                "s6-c1-dir": {
+                  "calls": 1,
+                  "input_tokens": 1165,
+                  "output_tokens": 54,
+                  "cached_tokens": 0,
+                  "created_cache_tokens": 1152,
+                  "elapsed_sec": 1.698
+                },
+                "s6-c1-rs": {
+                  "calls": 117,
+                  "input_tokens": 27025,
+                  "output_tokens": 281,
+                  "cached_tokens": 22272,
+                  "created_cache_tokens": 3936,
+                  "elapsed_sec": 74.766
+                },
+                "s6-c2-asg": {
+                  "calls": 37,
+                  "input_tokens": 8817,
+                  "output_tokens": 80,
+                  "cached_tokens": 6912,
+                  "created_cache_tokens": 1376,
+                  "elapsed_sec": 25.939
+                },
+                "s6-c3-jdg": {
+                  "calls": 7,
+                  "input_tokens": 3987,
+                  "output_tokens": 251,
+                  "cached_tokens": 896,
+                  "created_cache_tokens": 2976,
+                  "elapsed_sec": 14.443
+                },
+                "s6-c4-asg": {
+                  "calls": 181,
+                  "input_tokens": 31836,
+                  "output_tokens": 368,
+                  "cached_tokens": 22976,
+                  "created_cache_tokens": 6272,
+                  "elapsed_sec": 143.045
+                },
+                "s6-c4-gen": {
+                  "calls": 10,
+                  "input_tokens": 10307,
+                  "output_tokens": 117,
+                  "cached_tokens": 6080,
+                  "created_cache_tokens": 4096,
+                  "elapsed_sec": 16.837
+                },
+                "s6-c4-jdg": {
+                  "calls": 5,
+                  "input_tokens": 2301,
+                  "output_tokens": 150,
+                  "cached_tokens": 640,
+                  "created_cache_tokens": 1632,
+                  "elapsed_sec": 10.181
+                },
+                "s6-c5-rs": {
+                  "calls": 17,
+                  "input_tokens": 4012,
+                  "output_tokens": 39,
+                  "cached_tokens": 3072,
+                  "created_cache_tokens": 736,
+                  "elapsed_sec": 7.562
+                }
+              }
+            },
+            "dir": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-initial_exploration",
+            "paths": {
+              "s6-c1-dir": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-initial_exploration/s6-c1-dir.txt.gz",
+              "s6-c1-rs": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-initial_exploration/s6-c1-rs.txt.gz",
+              "s6-c2-asg": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-initial_exploration/s6-c2-asg.txt.gz",
+              "s6-c3-jdg": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-initial_exploration/s6-c3-jdg.txt.gz",
+              "s6-c4-asg": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-initial_exploration/s6-c4-asg.txt.gz",
+              "s6-c4-gen": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-initial_exploration/s6-c4-gen.txt.gz",
+              "s6-c4-jdg": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-initial_exploration/s6-c4-jdg.txt.gz",
+              "s6-c5-rs": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-initial_exploration/s6-c5-rs.txt.gz"
+            },
+            "stored": 375
+          },
+          "own_and_service": {
+            "summary": {
+              "stored": 138,
+              "errors": 0,
+              "by_use_case": {
+                "s6-c1-dir": {
+                  "calls": 1,
+                  "input_tokens": 737,
+                  "output_tokens": 52,
+                  "cached_tokens": 256,
+                  "created_cache_tokens": 480,
+                  "elapsed_sec": 1.307
+                },
+                "s6-c1-rs": {
+                  "calls": 58,
+                  "input_tokens": 12307,
+                  "output_tokens": 122,
+                  "cached_tokens": 10752,
+                  "created_cache_tokens": 384,
+                  "elapsed_sec": 9.876
+                },
+                "s6-c2-asg": {
+                  "calls": 7,
+                  "input_tokens": 1547,
+                  "output_tokens": 14,
+                  "cached_tokens": 896,
+                  "created_cache_tokens": 512,
+                  "elapsed_sec": 3.423
+                },
+                "s6-c3-jdg": {
+                  "calls": 3,
+                  "input_tokens": 1742,
+                  "output_tokens": 100,
+                  "cached_tokens": 256,
+                  "created_cache_tokens": 1440,
+                  "elapsed_sec": 7.068
+                },
+                "s6-c4-asg": {
+                  "calls": 62,
+                  "input_tokens": 10981,
+                  "output_tokens": 126,
+                  "cached_tokens": 7616,
+                  "created_cache_tokens": 2304,
+                  "elapsed_sec": 34.367
+                },
+                "s6-c4-gen": {
+                  "calls": 2,
+                  "input_tokens": 2614,
+                  "output_tokens": 22,
+                  "cached_tokens": 608,
+                  "created_cache_tokens": 1984,
+                  "elapsed_sec": 2.438
+                },
+                "s6-c4-jdg": {
+                  "calls": 2,
+                  "input_tokens": 1185,
+                  "output_tokens": 57,
+                  "cached_tokens": 256,
+                  "created_cache_tokens": 896,
+                  "elapsed_sec": 3.72
+                },
+                "s6-c5-rs": {
+                  "calls": 3,
+                  "input_tokens": 651,
+                  "output_tokens": 7,
+                  "cached_tokens": 352,
+                  "created_cache_tokens": 256,
+                  "elapsed_sec": 1.438
+                }
+              }
+            },
+            "dir": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-own_and_service",
+            "paths": {
+              "s6-c1-dir": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-own_and_service/s6-c1-dir.txt.gz",
+              "s6-c1-rs": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-own_and_service/s6-c1-rs.txt.gz",
+              "s6-c2-asg": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-own_and_service/s6-c2-asg.txt.gz",
+              "s6-c3-jdg": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-own_and_service/s6-c3-jdg.txt.gz",
+              "s6-c4-asg": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-own_and_service/s6-c4-asg.txt.gz",
+              "s6-c4-gen": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-own_and_service/s6-c4-gen.txt.gz",
+              "s6-c4-jdg": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-own_and_service/s6-c4-jdg.txt.gz",
+              "s6-c5-rs": "/results/jf-cache/28eaf8be-45ad-44b0-9510-28b54295e951/llm-usage/6-own_and_service/s6-c5-rs.txt.gz"
+            },
+            "stored": 138
+          }
+        },
+        "llm_failures": {
+          "summary": {
+            "stored": 0,
+            "truncated": false,
+            "by_reason": {},
+            "by_use_case": {}
+          }
+        },
+        "use_case_concurrency": {
+          "jobs": 1,
+          "use_cases": {
+            "s6-c1-dir": 20,
+            "s6-c1-rs": 20,
+            "s6-c2-asg": 20,
+            "s6-c3-jdg": 20,
+            "s6-c4-jdg": 20,
+            "s6-c4-gen": 20,
+            "s6-c4-asg": 20,
+            "s6-c5-rs": 20
+          }
+        },
+        "metrics": {
+          "quality": {
+            "topics": 406,
+            "cycle_topics": 0,
+            "cycle_ratio": 0.0,
+            "cycle_examples": []
+          }
+        }
+      }
+    }
+  },
+  "errors": {
+    "s3": 6,
+    "s4": 0,
+    "s5": 0
+  },
+  "files": {
+    "s1_keyword_expansion": 8595,
+    "s2_relevance": 8595,
+    "s3_attributes": 5100,
+    "s4_brand": 5100,
+    "s5_cdj": 5100,
+    "s6_topics": 5100
+  }
+}
