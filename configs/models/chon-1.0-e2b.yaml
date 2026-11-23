@@ -18,3 +18,9 @@ chon_repo: https://github.com/xoai/chon
 chon_ref: 455e7b95853364a575253f8d960c9b04b51fe050   # main on 2026-11-20 (chon 1.7.0)
 instance: ml.g6e.xlarge
 volume_gb: 60
+
+# Serving profile (scripts/run.py --serving, configs/serving.yaml): the option letters are read by a vLLM server
+# of the merged model (chon 1.7.0 --reader vllm, bf16, prefix caching), the same engine as Gemma. Same one-pass
+# settings as above. CHON_VLLM_STRICT is set, so a reader that does not start stops the run instead of timing HF.
+serving:
+  serve_args: [--no-think, --reread, "off", --deadline, "0", --noul-commit, "off", --reader, vllm]

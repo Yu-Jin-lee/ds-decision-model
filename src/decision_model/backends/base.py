@@ -18,6 +18,14 @@ class Backend(ABC):
     def __init__(self, model_config: dict[str, Any]):
         self.config = model_config
         self.train_config = dict(model_config.get("train") or {})
+        # Serving profile (configs/serving.yaml): predict as the model would be served, bf16 with its own
+        # fastest engine, instead of the evaluation path. Set by get_backend(..., serving=True).
+        self.serving = False
+
+    @property
+    def serving_config(self) -> dict[str, Any]:
+        """The model config's ``serving`` section (empty when the run is not a serving run)."""
+        return dict(self.config.get("serving") or {}) if self.serving else {}
 
     @abstractmethod
     def train(

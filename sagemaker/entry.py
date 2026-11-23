@@ -4,6 +4,10 @@
 Installs what the chosen backend needs, then runs scripts/run.py with the
 job's hyperparameters (--model, --group, --seed, optional --final).
 
+Serving jobs (launcher --serving) re-time finished runs with the serving profile
+(configs/serving.yaml): the job installs each model's serving engine as well, downloads
+the checkpoint of every trained run from the runs prefix, and writes serving/{run_id}/.
+
 Batch jobs (launcher --batch) pass --runs "GROUP:SEED,GROUP:SEED,...": the
 installs and the base-model download happen once, then each run executes in its
 own run.py process (so every run starts from the base checkpoint with fresh
@@ -30,11 +34,12 @@ def sh(*command: str, cwd: Path | None = None, env: dict[str, str] | None = None
 
 
 def main() -> None:
-    args = sys.argv[1:]
+    args, serving = take_serving_flag(sys.argv[1:])
     model = args[args.index("--model") + 1]
-    from decision_model.config import load_model_config
+    from decision_model.config import load_model_config, load_yaml, CONFIG_DIR
 
     config = load_model_config(model)
+    serving_config = load_yaml(CONFIG_DIR / "serving.yaml") if serving else {}
     sh(sys.executable, "-m", "pip", "install", "-q", "-r", str(REPO / "requirements.txt"))
     if config["backend"] == "clef":
         sh(sys.executable, "-m", "pip", "install", "-q", "-r", str(REPO / "requirements-clef.txt"))
@@ -48,17 +53,21 @@ def main() -> None:
         from decision_model.backends.kev import uv_environment
 
         sh("uv", "sync", "--extra", "serve", cwd=kev_dir, env=uv_environment(kev_dir))
+        if serving:
+            # e.g. flash-linear-attention for Kev's fused kernels (not in Kev's serve extra)
+            for package in (config.get("serving") or {}).get("install", []):
+                sh("uv", "pip", "install", "--python", str(kev_dir / ".venv" / "bin" / "python"), package,
+                   cwd=kev_dir, env=uv_environment(kev_dir))
     elif config["backend"] == "chon":
         sh(sys.executable, "-m", "pip", "install", "-q", f"chon[serve] @ git+{config['chon_repo']}@{config['chon_ref']}")
+        if serving:
+            install_vllm(serving_config["vllm_package"])   # Chon's --reader vllm
     elif config["backend"] == "prompt_llm":
-        # vLLM brings its own torch/CUDA wheels: install it in a separate venv, never the image's Python.
-        from decision_model.backends.prompt_llm import DEFAULT_VLLM_VENV, _clean_env
+        from decision_model.backends.prompt_llm import _clean_env
 
-        sh(sys.executable, "-m", "pip", "install", "-q", "uv")
+        package = serving_config["vllm_package"] if serving else config.get("vllm", {}).get("package", "vllm")
+        venv_python = install_vllm(package)
         env = _clean_env()
-        sh("uv", "venv", "--python", "3.12", str(DEFAULT_VLLM_VENV), env=env)
-        venv_python = str(DEFAULT_VLLM_VENV / "bin" / "python")
-        sh("uv", "pip", "install", "--python", venv_python, config.get("vllm", {}).get("package", "vllm"), env=env)
         # Download once, then split into small shards: vLLM mmaps each .safetensors file whole,
         # and Gemma's 50 GB shard cannot be mapped with the instance's 32 GB of RAM.
         models = Path(os.environ.get("VLLM_MODELS_DIR", "/opt/ml/models"))
@@ -74,17 +83,89 @@ def main() -> None:
         shutil.rmtree(raw)
         os.environ["VLLM_MODEL_PATH"] = str(local)   # read by the backend in every run.py process
     resume_root = None
+    if serving and "--resume-from" in args:
+        raise SystemExit("--resume-from does not apply to a serving job; it reads checkpoints from the runs prefix")
     if "--resume-from" in args:
         resume_root = fetch_resume(args[args.index("--resume-from") + 1])
         args = _drop(args, "--resume-from")
     if "--runs" in args:
-        run_batch(model, parse_runs(args[args.index("--runs") + 1]), _without(args, "--runs"), resume_root)
+        run_batch(model, parse_runs(args[args.index("--runs") + 1]), _without(args, "--runs"), resume_root, serving)
         return
-    if resume_root is not None:
-        group, seed = args[args.index("--group") + 1], args[args.index("--seed") + 1] if "--seed" in args else "0"
+    group, seed = args[args.index("--group") + 1], args[args.index("--seed") + 1] if "--seed" in args else "0"
+    if serving:
+        args = [*args, "--serving", *serving_checkpoint_args(model, group, int(seed))]
+    elif resume_root is not None:
         args = [*args, *resume_args(resume_root, f"{model}/{group}/s{seed}")]
     sh(sys.executable, str(REPO / "scripts" / "run.py"), *args)
     upload_outputs()
+
+
+def take_serving_flag(args: list[str]) -> tuple[list[str], bool]:
+    """SageMaker passes the launcher's ``serving`` hyperparameter as ``--serving 1``; run.py takes a bare flag."""
+    if "--serving" not in args:
+        return args, False
+    i = args.index("--serving")
+    has_value = i + 1 < len(args) and not args[i + 1].startswith("--")
+    if has_value and args[i + 1].lower() in ("0", "false", "no"):
+        return args[:i] + args[i + 2:], False
+    return args[:i] + args[i + (2 if has_value else 1):], True
+
+
+def install_vllm(package: str) -> str:
+    """vLLM brings its own torch/CUDA wheels: install it in a separate venv, never the image's Python."""
+    from decision_model.backends.prompt_llm import DEFAULT_VLLM_VENV, _clean_env
+
+    sh(sys.executable, "-m", "pip", "install", "-q", "uv")
+    env = _clean_env()
+    sh("uv", "venv", "--python", "3.12", str(DEFAULT_VLLM_VENV), env=env)
+    venv_python = str(DEFAULT_VLLM_VENV / "bin" / "python")
+    sh("uv", "pip", "install", "--python", venv_python, package, env=env)
+    return venv_python
+
+
+def checkpoint_relative_path(summary: dict, run_id: str) -> str:
+    """Where a run's checkpoint sits inside its run folder (``checkpoint/checkpoint`` for Kev and Chon,
+    ``checkpoint`` for Laya), read from the path its summary.json recorded."""
+    recorded = str(summary.get("checkpoint") or "")
+    marker = f"/{run_id}/"
+    if marker not in recorded:
+        raise ValueError(f"{run_id}: summary.json records checkpoint {recorded!r}, not inside the run folder")
+    return recorded.split(marker, 1)[1].strip("/")
+
+
+def serving_checkpoint_args(model: str, group: str, seed: int) -> list[str]:
+    """``--checkpoint DIR`` for a trained run: its checkpoint downloaded from the runs prefix (SM_OUTPUT_PREFIX);
+    nothing for a run that does not train (B0, P0: the released model)."""
+    from decision_model.pipeline import find_run
+
+    run = find_run(model, group, seed)
+    if not run.train:
+        return []
+    prefix = os.environ.get("SM_OUTPUT_PREFIX")
+    if not prefix:
+        raise SystemExit(f"{run.run_id}: a serving job needs SM_OUTPUT_PREFIX to find the run's checkpoint")
+    import json
+
+    import boto3
+
+    client = boto3.client("s3")
+    bucket, _, key_prefix = prefix.removeprefix("s3://").partition("/")
+    run_key = f"{key_prefix.rstrip('/')}/{run.run_id}".lstrip("/")
+    summary = json.loads(client.get_object(Bucket=bucket, Key=f"{run_key}/summary.json")["Body"].read())
+    relative = checkpoint_relative_path(summary, run.run_id)
+    # Outside SM_MODEL_DIR, so the checkpoint is not uploaded again with the serving run.
+    local = Path(os.environ.get("SERVING_CHECKPOINTS_DIR", "/opt/ml/serving-checkpoints")) / run.run_id / relative
+    count = 0
+    for page in client.get_paginator("list_objects_v2").paginate(Bucket=bucket, Prefix=f"{run_key}/{relative}/"):
+        for item in page.get("Contents", []):
+            target = local / item["Key"][len(f"{run_key}/{relative}/"):]
+            target.parent.mkdir(parents=True, exist_ok=True)
+            client.download_file(bucket, item["Key"], str(target))
+            count += 1
+    if not count:
+        raise SystemExit(f"{run.run_id}: no checkpoint files under s3://{bucket}/{run_key}/{relative}/")
+    print(f"serving {run.run_id}: {count} checkpoint files -> {local}", flush=True)
+    return ["--checkpoint", str(local)]
 
 
 def _drop(args: list[str], flag: str) -> list[str]:
@@ -154,19 +235,25 @@ def _without(args: list[str], *flags: str) -> list[str]:
     return out
 
 
-def run_batch(model: str, runs: list[tuple[str, int]], extra: list[str], resume_root: Path | None = None) -> None:
+def run_batch(model: str, runs: list[tuple[str, int]], extra: list[str], resume_root: Path | None = None,
+              serving: bool = False) -> None:
     import shutil
 
     model_dir = Path(os.environ.get("SM_MODEL_DIR", "runs"))
     failed = []
     for i, (group, seed) in enumerate(runs, 1):
         run_id = f"{model}/{group}/s{seed}"
+        if serving:
+            run_id = f"serving/{run_id}"   # pipeline.SERVING_DIR
         print(f"=== [{i}/{len(runs)}] {run_id}", flush=True)
         try:
+            more = (["--serving", *serving_checkpoint_args(model, group, seed)] if serving
+                    else resume_args(resume_root, run_id))
             sh(sys.executable, str(REPO / "scripts" / "run.py"), "--model", model, "--group", group, "--seed", str(seed),
-               *extra, *resume_args(resume_root, run_id))
-        except subprocess.CalledProcessError as error:
-            print(f"!!! {run_id} failed (exit {error.returncode}); continuing", flush=True)
+               *extra, *more)
+        except (subprocess.CalledProcessError, SystemExit) as error:
+            code = error.returncode if isinstance(error, subprocess.CalledProcessError) else error.code
+            print(f"!!! {run_id} failed (exit {code}); continuing", flush=True)
             failed.append(run_id)
             continue
         upload_outputs(run_id)

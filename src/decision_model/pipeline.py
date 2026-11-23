@@ -21,6 +21,11 @@ from .latency import measure as measure_latency
 from .latency import measure_by_view
 
 
+# Serving runs (configs/serving.yaml) are written under runs/serving/{model}/{group}/s{seed}/, next to the
+# evaluation run they re-time, so they never overwrite it.
+SERVING_DIR = "serving"
+
+
 def find_run(model: str, group: str, seed: int, config_dir: Path = CONFIG_DIR) -> Run:
     groups_config = load_yaml(config_dir / "groups.yaml")
     tasks_config = load_yaml(config_dir / "tasks.yaml")
@@ -92,20 +97,32 @@ def execute(
     config_dir: Path = CONFIG_DIR,
     measure_latency_too: bool = True,
     checkpoint: Path | None = None,
+    serving: bool = False,
 ) -> dict[str, Any]:
     """``checkpoint``: a checkpoint this run already trained (e.g. from a failed job's
-    model.tar.gz). Training is skipped and everything after it runs as usual."""
+    model.tar.gz). Training is skipped and everything after it runs as usual.
+
+    ``serving``: re-time the run with the model's serving profile (configs/serving.yaml): bf16 and its own
+    fastest engine. Nothing is trained; a trained run needs its ``checkpoint``, which is read where it is.
+    Calibration, development predictions, metrics and latency are produced as usual, so the summary also
+    shows whether the serving path answers like the evaluation path."""
     model_config = load_model_config(run.model, config_dir)
     tasks_config = load_yaml(config_dir / "tasks.yaml")
     specs = load_task_specs(tasks_config)
     input_hashes: dict[str, str] = {}
-    backend = backend or get_backend(model_config)
-    out_dir = Path(out_root) / run.run_id
+    backend = backend or get_backend(model_config, serving=serving)
+    out_dir = Path(out_root) / (SERVING_DIR if serving else "") / run.run_id
     out_dir.mkdir(parents=True, exist_ok=True)
     started = time.time()
 
     resumed_from = None
-    if checkpoint is not None:
+    if serving:
+        if run.train and checkpoint is None:
+            raise ValueError(f"{run.run_id} is a trained run: a serving run needs its checkpoint (--checkpoint)")
+        if checkpoint is not None and not Path(checkpoint).exists():
+            raise FileNotFoundError(f"checkpoint {checkpoint} does not exist")
+        resumed_from = str(checkpoint) if checkpoint is not None else None
+    elif checkpoint is not None:
         if not run.train:
             raise ValueError(f"{run.run_id} does not train; it has no checkpoint to resume from")
         if not Path(checkpoint).exists():
@@ -117,10 +134,10 @@ def execute(
             shutil.copytree(checkpoint, local, dirs_exist_ok=True)
         checkpoint = local
     replay_records = None
-    if run.train:
+    if run.train and not serving:
         train_records = build_records(data_root, specs, run.levels, run.train_langs, "train", with_labels=True)
         input_hashes["train"] = save_model_inputs(out_dir, "train", train_records)
-    if run.train and checkpoint is None:
+    if run.train and checkpoint is None and not serving:
         if run.replay and model_config["backend"] != "kev":
             if replay_file is None or not Path(replay_file).exists():
                 raise FileNotFoundError(
@@ -143,6 +160,8 @@ def execute(
         "temperature": temperature,
         "checkpoint": str(checkpoint) if checkpoint else model_config["checkpoint"],
         "resumed_from": resumed_from,
+        "profile": "serving" if serving else "evaluation",
+        "serving": load_yaml(config_dir / "serving.yaml") if serving else None,
         "git_commit": _git_commit(),
         "git_dirty": _git_dirty(),
         "data_manifest": data_manifest(data_root),

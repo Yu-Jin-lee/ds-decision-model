@@ -43,3 +43,8 @@ prompts:
 
 instance: ml.g6e.xlarge
 volume_gb: 200             # download (~52 GB) + resharded copy (~52 GB) + vLLM venv
+
+# Serving profile (scripts/run.py --serving, configs/serving.yaml): the flags above, unchanged. On the L40S
+# (48 GB) bf16 weights do not fit, so the weights stay int8 (weight-only); compute is bf16 like every model.
+serving:
+  same_as_evaluation: true

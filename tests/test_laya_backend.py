@@ -103,3 +103,28 @@ def test_predictor_gives_the_same_answers_one_record_at_a_time(fake_laya):
     batched = backend.predict(None, records)
     with backend.predictor(None) as predict_one:
         assert [predict_one(r) for r in records] == batched
+
+
+def test_serving_run_predicts_under_bf16_autocast(fake_laya, monkeypatch):
+    """The serving profile wraps the forward in bf16 autocast; the evaluation path does not."""
+    import decision_model.backends.laya as laya_module
+
+    seen = []
+    real_forward = sys.modules["laya.train"]._forward
+
+    def forward(model, batch, device, amp, detach_encoder):
+        seen.append(torch.is_autocast_enabled(device.type) and torch.get_autocast_dtype(device.type))
+        return real_forward(model, batch, device, amp, detach_encoder)
+
+    monkeypatch.setattr(sys.modules["laya.train"], "_forward", forward)
+    config = {"backend": "laya", "checkpoint": "convaiinnovations/laya-multilingual", "train": {"eval_batch": 2},
+              "serving": {"autocast": "bf16"}}
+    record = to_model_record({"id": "r0", "task": "s4", "lang": "ko", "state": {"keyword": "k"}, "label": "brand",
+                              "variant": None}, SPECS["s4"], "noul", with_labels=True)
+    evaluation = LayaBackend(config, device="cpu")
+    serving = LayaBackend(config, device="cpu")
+    serving.serving = True
+    a = evaluation.predict(None, [record])
+    b = serving.predict(None, [record])
+    assert seen == [False, torch.bfloat16]
+    assert a[0]["answers"].keys() == b[0]["answers"].keys()

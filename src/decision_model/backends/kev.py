@@ -3,7 +3,9 @@
 Training runs ``python -m kev.train`` with the recipe in the model config.
 Prediction starts ``python -m kev.serve`` on the checkpoint with
 ``KEV_TEMPERATURE=1.0`` (raw probabilities) and ``KEV_DTYPE=fp32`` (the
-evaluation path), then asks every record through ``/v1/systemone``.
+evaluation path), then asks every record through ``/v1/systemone``. A serving
+run (``serving``) uses Kev's own serving settings instead: bf16, CUDA graphs
+and the fused Qwen3.5 kernels.
 Calibration happens afterwards in shared code, as for every backend.
 """
 
@@ -157,8 +159,20 @@ class KevBackend(Backend):
         with self.predictor(checkpoint) as predict_one:
             return [predict_one(record) for record in records]
 
+    def serve_env(self) -> dict[str, str]:
+        """Kev's settings for ``kev.serve``: raw probabilities always; the fp32 evaluation path, or the serving
+        profile's (bf16, CUDA graphs, fused kernels; configs/models/kev-*.yaml ``serving.env``)."""
+        env = {"KEV_TEMPERATURE": "1.0", "KEV_DTYPE": "fp32"}
+        if self.serving:
+            env.update({k: str(v) for k, v in (self.serving_config.get("env") or {}).items()})
+        return env
+
     def inference_precision(self) -> str:
-        return "fp32 (KEV_DTYPE=fp32, evaluation path)"
+        env = self.serve_env()
+        if not self.serving:
+            return "fp32 (KEV_DTYPE=fp32, evaluation path)"
+        return (f"{env['KEV_DTYPE']} (kev.serve serving path: CUDA graphs {env.get('KEV_CUDA_GRAPHS', 'default')}, "
+                f"fused kernels {env.get('KEV_FUSED', 'default')})")
 
     @contextmanager
     def predictor(self, checkpoint: Path | None) -> Iterator[Callable[[dict[str, Any]], Prediction]]:
@@ -169,7 +183,7 @@ class KevBackend(Backend):
         """
         port = _free_port()
         run = str(checkpoint) if checkpoint is not None else self.config["checkpoint"]
-        env = uv_environment(self.kev_dir, KEV_TEMPERATURE="1.0", KEV_DTYPE="fp32")
+        env = uv_environment(self.kev_dir, **self.serve_env())
         server = subprocess.Popen(
             self._uv("kev.serve", "--run", run, "--port", str(port), extra="serve"),
             cwd=self.kev_dir,

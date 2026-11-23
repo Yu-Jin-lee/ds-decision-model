@@ -35,6 +35,9 @@ def main() -> None:
     parser.add_argument("--checkpoint", default=None,
                         help="skip training and use this run's existing checkpoint (e.g. from a failed job)")
     parser.add_argument("--final", action="store_true", help="also score the locked test partition (once)")
+    parser.add_argument("--serving", action="store_true",
+                        help="re-time with the serving profile (configs/serving.yaml): bf16, each model's fastest "
+                             "engine; writes runs/serving/...; a trained run needs --checkpoint")
     parser.add_argument("--list", action="store_true", help="print the run matrix and exit")
     parser.add_argument("--stage", type=int, action="append", help="with --list: only these stages")
     parser.add_argument("--include-optional", action="store_true")
@@ -60,7 +63,7 @@ def main() -> None:
     if replay_file is None and (Path(args.data_root) / "replay.jsonl").exists():
         replay_file = Path(args.data_root) / "replay.jsonl"
     summary = execute(run, Path(args.data_root), Path(args.out_root), final=args.final, replay_file=replay_file,
-                      checkpoint=Path(args.checkpoint) if args.checkpoint else None)
+                      checkpoint=Path(args.checkpoint) if args.checkpoint else None, serving=args.serving)
     print(json.dumps({k: summary[k] for k in ("temperature", "metrics_development")}, indent=2, ensure_ascii=False))
 
 

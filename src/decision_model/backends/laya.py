@@ -127,7 +127,20 @@ class LayaBackend(Backend):
         return self._predict_loaded(loaded, records, int(self.train_config.get("eval_batch", 32)))
 
     def inference_precision(self) -> str:
-        return "fp32 (amp off)"
+        autocast = self.serving_config.get("autocast")
+        return f"{autocast} autocast (serving)" if autocast else "fp32 (amp off)"
+
+    def _autocast(self, device: Any) -> Any:
+        """bf16 autocast for a serving run (``serving.autocast``); nothing for the fp32 evaluation path."""
+        import contextlib
+
+        import torch
+
+        name = self.serving_config.get("autocast")
+        if not name:
+            return contextlib.nullcontext()
+        dtype = {"bf16": torch.bfloat16, "bfloat16": torch.bfloat16, "fp16": torch.float16}[str(name)]
+        return torch.autocast(device.type, dtype=dtype)
 
     @contextmanager
     def predictor(self, checkpoint: Path | None) -> Iterator[Callable[[dict[str, Any]], Prediction]]:
@@ -169,7 +182,8 @@ class LayaBackend(Backend):
                 chunk = pending[start : start + batch_size]
                 encoded = [encode_item(tokenizer, item, max_len, head_max_len, parallel=parallel) for *_, item in chunk]
                 batch = collate_items([encoded], tokenizer.pad_token_id)
-                logits = _forward(model, batch, device, amp=False, detach_encoder=False).cpu()
+                with self._autocast(device):
+                    logits = _forward(model, batch, device, amp=False, detach_encoder=False).cpu()
                 for (index, qid, keys, _), row in zip(chunk, logits):
                     log_probs = torch.log_softmax(row[: len(keys)], -1).tolist()
                     predictions[index]["answers"][qid] = dict(zip(keys, log_probs))

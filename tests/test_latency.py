@@ -42,3 +42,21 @@ def test_measure_by_view_times_each_format_alone():
     assert ["s5_choice"] in seen and ["s5_score"] in seen and ["s5_choice", "s5_score"] not in seen
     # Single-view levels are left to the main measurement.
     assert measure_by_view(lambda r: None, records, specs, {"s5": "choice"}) == {}
+
+
+def test_warmup_uses_records_outside_the_timed_sample():
+    """A server that caches whole prompts (vLLM) must not have seen a timed record before it is timed."""
+    records = _records("s5", "en", 40)
+    seen = []
+    result = measure(lambda r: seen.append(r["id"]), records, per_cell=20, warmup=5)
+    timed = {r["id"] for r in sample_records(records, 20)}
+    warm, measured = seen[:5], seen[5:]
+    assert set(measured) == timed and not set(warm) & timed
+    assert result["conditions"]["warmup"] == 5 and result["conditions"]["warmup_outside_sample"] is True
+
+
+def test_warmup_falls_back_to_the_sample_when_there_is_nothing_else():
+    records = _records("s5", "en", 3)
+    seen = []
+    result = measure(lambda r: seen.append(r["id"]), records, per_cell=30, warmup=5)
+    assert len(seen) == 6 and result["conditions"]["warmup_outside_sample"] is False

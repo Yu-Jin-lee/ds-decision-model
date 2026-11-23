@@ -25,3 +25,11 @@ train:
 kev_repo: https://github.com/jaredpalmer/kev.git
 kev_ref: kev-1.0
 instance: ml.g7e.2xlarge   # confirm with the smoke run's peak memory
+
+# Serving profile (scripts/run.py --serving, configs/serving.yaml): kev.serve's own CUDA defaults instead of the
+# fp32 evaluation path: bf16, CUDA graphs and the fused Qwen3.5 kernels. The kernels need flash-linear-attention
+# at kev's FLA_VERSION (kev/fused_qwen35.py), which the serve extra does not install; KEV_FUSED=1 fails loudly
+# without it instead of quietly serving unfused.
+serving:
+  env: {KEV_DTYPE: bf16, KEV_CUDA_GRAPHS: "1", KEV_FUSED: "1"}
+  install: ["flash-linear-attention==0.5.2"]

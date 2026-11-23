@@ -10,6 +10,13 @@ that installs and downloads the base model once, then runs them one after anothe
 (each from the base checkpoint, in its own process); results are uploaded per run.
 Runs whose summary.json already exists under --output are skipped, so the command
 can be re-run after a failure. Use --dry-run first to see what it would submit.
+
+With --serving, the selected runs (already finished) are re-timed with the serving
+profile (configs/serving.yaml): every model on the same instance, bf16, each with its
+own fastest engine. Results go to serving/{run_id}/ and are skipped the same way.
+
+    python scripts/launch_sagemaker.py --model kev-4b --group B0-s5-choice --group S-s5-choice \
+        --seed 0 --batch --serving --data ... --output ... --role ... --image-uri ...
 """
 
 from __future__ import annotations
@@ -54,7 +61,7 @@ def _group_token(group: str) -> tuple[str, str]:
     return re.sub(r"[^a-z0-9]", "", group.lower()), ""
 
 
-def batch_job_name(model: str, runs) -> str:
+def batch_job_name(model: str, runs, job_kind: str = "batch") -> str:
     """Readable name for a batch job, e.g. ``kev-4b-batch-b0s5sc-s5chscbo-s0`` (B0 s5 score; S5 choice, score, both; seed 0).
 
     Falls back to ``{model}-batch-{n}runs-{hash}`` when the runs do not fit in 39 characters;
@@ -70,7 +77,7 @@ def batch_job_name(model: str, runs) -> str:
         if level not in levels:
             levels.append(level)
     seeds = "".join(str(s) for s in sorted({run.seed for run in runs}))
-    name = "-".join([model, "batch", *(p + "".join(l) for p, l in tokens.items()), f"s{seeds}"])
+    name = "-".join([model, job_kind, *(p + "".join(l) for p, l in tokens.items()), f"s{seeds}"])
     if len(name) <= MAX_BASE_NAME:
         return name
     # Shorter: tasks that ran the same levels share one token, e.g. b0s2ch-b0s4ch -> b0s2s4ch.
@@ -79,11 +86,11 @@ def batch_job_name(model: str, runs) -> str:
         kind = prefix[:2] if prefix[:2] in ("b0", "p0") else ""
         merged.setdefault((kind, "".join(levels)), kind)
         merged[(kind, "".join(levels))] += prefix[len(kind):]
-    name = "-".join([model, "batch", *(head + lv for (_, lv), head in merged.items()), f"s{seeds}"])
+    name = "-".join([model, job_kind, *(head + lv for (_, lv), head in merged.items()), f"s{seeds}"])
     if len(name) <= MAX_BASE_NAME:
         return name
     digest = hashlib.sha1(",".join(f"{r.group}:{r.seed}" for r in runs).encode()).hexdigest()[:6]
-    return f"{model}-batch-{len(runs)}runs-{digest}"[:MAX_BASE_NAME]
+    return f"{model}-{job_kind}-{len(runs)}runs-{digest}"[:MAX_BASE_NAME]
 
 
 def git_state() -> tuple[str, str]:
@@ -96,6 +103,19 @@ def git_state() -> tuple[str, str]:
     except (OSError, subprocess.CalledProcessError):
         return "unknown", "1"
     return commit, "1" if dirty else "0"
+
+
+def output_id(run_id: str, serving: bool) -> str:
+    """Where a run's results go under --output: the run itself, or its serving re-timing (pipeline.SERVING_DIR)."""
+    return f"serving/{run_id}" if serving else run_id
+
+
+def job_settings(model_config: dict, serving_config: dict | None, instance_type: str | None) -> tuple[str, int]:
+    """(instance type, volume GB). A serving job uses the one instance in configs/serving.yaml for every model."""
+    if serving_config:
+        volume = max(int(model_config.get("volume_gb", 30)), int(serving_config.get("volume_gb", 30)))
+        return instance_type or serving_config["instance"], volume
+    return instance_type or model_config["instance"], int(model_config.get("volume_gb", 30))
 
 
 def already_done(s3_output: str, run_id: str) -> bool:
@@ -130,6 +150,10 @@ def main() -> None:
         "--resume-from", default=None,
         help="S3 URI of an earlier job's model.tar.gz: runs whose checkpoint it holds skip training",
     )
+    parser.add_argument(
+        "--serving", action="store_true",
+        help="re-time finished runs with the serving profile (configs/serving.yaml) into serving/{run_id}/",
+    )
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -151,7 +175,15 @@ def main() -> None:
         runs = [run for run in runs if run.seed in set(args.seed)]
     if not runs:
         sys.exit("no runs match the given --stage/--group/--seed")
-    instance_type = args.instance_type or model_config["instance"]
+    if args.serving and args.resume_from:
+        sys.exit("--resume-from does not apply to --serving (checkpoints are read from --output)")
+    if args.serving and not model_config.get("serving"):
+        sys.exit(f"{args.model} has no serving profile (key `serving` in its model config)")
+    serving_config = load_yaml(CONFIG_DIR / "serving.yaml") if args.serving else None
+    instance_type, volume_gb = job_settings(model_config, serving_config, args.instance_type)
+    if serving_config and args.instance_type and args.instance_type != serving_config["instance"]:
+        print(f"warning: --instance-type {args.instance_type} differs from configs/serving.yaml "
+              f"({serving_config['instance']}); serving numbers are only comparable on one instance")
     tags = dict(DEFAULT_TAGS)
     for item in args.tag:
         key, sep, value = item.partition("=")
@@ -169,13 +201,15 @@ def main() -> None:
 
         if args.resume_from:
             hyperparameters = {**hyperparameters, "resume-from": args.resume_from}
+        if args.serving:
+            hyperparameters = {**hyperparameters, "serving": "1"}
         max_run = args.max_run_hours * 3600
         estimator = Estimator(
             image_uri=args.image_uri,
             role=args.role,
             instance_type=instance_type,
             instance_count=1,
-            volume_size=int(model_config.get("volume_gb", 30)),
+            volume_size=volume_gb,
             entry_point="sagemaker/entry.py",
             source_dir=str(REPO),
             hyperparameters=hyperparameters,
@@ -198,15 +232,18 @@ def main() -> None:
 
     pending = []
     for run in runs:
-        if not args.dry_run and already_done(args.output, run.run_id):
-            print(f"skip   {run.run_id} (summary.json exists)")
+        if not args.dry_run and already_done(args.output, output_id(run.run_id, args.serving)):
+            print(f"skip   {output_id(run.run_id, args.serving)} (summary.json exists)")
+            continue
+        if args.serving and run.train and not args.dry_run and not already_done(args.output, run.run_id):
+            print(f"skip   {run.run_id} (not finished yet: a serving run needs its checkpoint)")
             continue
         pending.append(run)
 
     if args.batch:
         if not pending:
             sys.exit("nothing to run: every selected run already has summary.json")
-        name = batch_job_name(args.model, pending)
+        name = batch_job_name(args.model, pending, "serve" if args.serving else "batch")
         spec = ",".join(f"{run.group}:{run.seed}" for run in pending)
         tag_list.append({"Key": "runs", "Value": spec.replace(",", " ")[:256]})
         for run in pending:
@@ -219,7 +256,7 @@ def main() -> None:
         return
 
     for run in pending:
-        name = job_name(run.model, run.group, run.seed)
+        name = job_name(run.model, ("serve-" if args.serving else "") + run.group, run.seed)
         if args.dry_run:
             print(f"submit {run.run_id} -> {name} on {instance_type} commit={commit[:7]} tags={tags}")
             continue

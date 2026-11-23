@@ -7,7 +7,16 @@ from typing import Any
 from .base import Backend
 
 
-def get_backend(model_config: dict[str, Any]) -> Backend:
+def get_backend(model_config: dict[str, Any], serving: bool = False) -> Backend:
+    """``serving``: the model's serving profile (bf16, its fastest engine) instead of the evaluation path."""
+    if serving and not model_config.get("serving"):
+        raise ValueError(f"{model_config['name']} has no serving profile (key `serving` in its model config)")
+    backend = _make(model_config)
+    backend.serving = serving
+    return backend
+
+
+def _make(model_config: dict[str, Any]) -> Backend:
     name = model_config["backend"]
     if name == "clef":
         from .clef import ClefBackend
