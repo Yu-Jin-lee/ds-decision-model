@@ -120,9 +120,9 @@ def test_ab_job_scores_with_the_runs_checkpoint_and_temperature(tmp_path, monkey
                                       "s3://b/p/runs/", "--out", str(tmp_path / "out"), "--install", "0"])
     ab_job.main()
 
-    out = tmp_path / "out" / "ab" / "t" / "chon-1.0-e4b" / "J-best" / "s0"
+    out = tmp_path / "out" / "ab" / "t" / "s5" / "ko" / "chon-1.0-e4b" / "J-best" / "s0"
     result = json.loads((out / "summary.json").read_text())
-    assert result["levels"] == {"s5": "choice"} and result["records"] == 2
+    assert result["level"] == "choice" and result["records"] == 2 and result["lang"] == "ko"
     assert result["source_run"]["temperature"] == 1.4
     assert backend.checkpoint == tmp_path / "ck" / "chon-1.0-e4b" / "J-best" / "s0" / "checkpoint" / "checkpoint"
     assert result["metrics_development"]["s5/ko/choice"]["accuracy"] == 0.5
@@ -196,3 +196,41 @@ def test_jf_s2_and_s4_rows_become_the_training_input_format(tmp_path):
     assert [r["gold"] for r in s4r] == ["brand", "nonbrand"]
     assert s4r[0]["state"]["target"] == ["헤라"] and s4r[1]["state"]["target"] == []
     assert sorted(s4r[0]["questions"]) == ["s4_choice", "s4_noul"]
+
+
+def test_ab_job_predicts_once_and_saves_each_language_apart(tmp_path, monkeypatch):
+    import boto3
+
+    import ab_job
+    import decision_model.backends
+
+    write_jf_csv(tmp_path / "s5.csv")
+    master, data = tmp_path / "m.jsonl", tmp_path / "data"
+    subprocess.run([sys.executable, str(REPO / "scripts" / "jf_to_master.py"), "--task", "s5", "--csv",
+                    str(tmp_path / "s5.csv"), "--out", str(master)], check=True)
+    subprocess.run([sys.executable, str(REPO / "scripts" / "prepare_data.py"), "--task", "s5", "--master", str(master),
+                    "--out", str(data)], check=True)
+
+    class Counting(FakeBackend):
+        calls = 0
+
+        def predict(self, checkpoint, records):
+            Counting.calls += 1
+            return super().predict(checkpoint, records)
+
+    summary = {"temperature": 1.4, "checkpoint": "/opt/ml/model/chon-1.0-e4b/J-best/s0/checkpoint/checkpoint"}
+    monkeypatch.setattr(boto3, "client", lambda *a, **k: FakeS3(summary))
+    monkeypatch.setattr(decision_model.backends, "get_backend", lambda config: Counting())
+    monkeypatch.setenv("AB_CHECKPOINT_DIR", str(tmp_path / "ck"))
+    monkeypatch.delenv("SM_MODEL_DIR", raising=False)
+    monkeypatch.setattr(sys, "argv", ["ab_job.py", "--model", "chon-1.0-e4b", "--group", "J-best", "--task", "s5",
+                                      "--lang", "ko,en", "--name", "t", "--data-root", str(data), "--runs-prefix",
+                                      "s3://b/p/runs/", "--out", str(tmp_path / "out"), "--install", "0"])
+    ab_job.main()
+
+    assert Counting.calls == 1
+    base = tmp_path / "out" / "ab" / "t" / "s5"
+    ko = json.loads((base / "ko" / "chon-1.0-e4b" / "J-best" / "s0" / "summary.json").read_text())
+    en = json.loads((base / "en" / "chon-1.0-e4b" / "J-best" / "s0" / "summary.json").read_text())
+    assert (ko["records"], en["records"]) == (2, 1)
+    assert list(ko["metrics_development"]) == ["s5/ko/choice"] and list(en["metrics_development"]) == ["s5/en/choice"]

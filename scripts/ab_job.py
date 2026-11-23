@@ -9,8 +9,10 @@ the task (configs/tasks.yaml), the model input format (scripts/jf_to_master.py +
 checkpoint and calibration temperature (read from its summary.json), and the evaluation reader (not the
 serving profile). The data's labels are the existing system's answers, so "accuracy" is agreement with it.
 
-On SageMaker (scripts/ab_launch.py) the data comes from the `data` channel and results go to
-{runs-prefix}ab/{name}/{run_id}/; nothing under the run itself is touched.
+Several tasks and languages (--task s2,s4,s5 --lang ko,ja,en) go through one prediction call, so the model is
+started once per job; each task and language is scored and saved on its own, in
+{runs-prefix}ab/{name}/{task}/{lang}/{run_id}/. On SageMaker (scripts/ab_launch.py) the data comes from the
+`data` channel; nothing under the run itself is touched.
 """
 
 from __future__ import annotations
@@ -62,7 +64,7 @@ def main() -> None:
     parser.add_argument("--group", required=True)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--task", required=True, help="one task, or several joined by commas (s2,s4)")
-    parser.add_argument("--lang", required=True)
+    parser.add_argument("--lang", required=True, help="one language, or several joined by commas (ko,ja,en)")
     parser.add_argument("--name", required=True, help="name of the outside data set, e.g. jf-beauty-kr-s5")
     parser.add_argument("--data-root", default=os.environ.get("SM_CHANNEL_DATA", "data_ab"))
     parser.add_argument("--runs-prefix", default=os.environ.get("SM_OUTPUT_PREFIX"))
@@ -117,54 +119,70 @@ def main() -> None:
         print(f"{run.run_id}: {count} checkpoint files -> {checkpoint}", flush=True)
 
     specs = load_task_specs(load_yaml(CONFIG_DIR / "tasks.yaml"))
-    records = build_records(args.data_root, specs, levels, [args.lang], "development",
-                            with_labels=True, for_prediction=True)
-    out = Path(args.out) / "ab" / args.name / run.run_id
-    out.mkdir(parents=True, exist_ok=True)
-    inputs_sha = save_model_inputs(out, "development", records)
-
+    langs = [lang.strip() for lang in args.lang.split(",") if lang.strip()]
+    # Every task and language in one prediction call: the model is started once for the whole job.
+    records = build_records(args.data_root, specs, levels, langs, "development", with_labels=True, for_prediction=True)
     backend = get_backend(config)   # evaluation reader, as the run was evaluated
     predictions = backend.predict(checkpoint, records)
-    rows, metrics = score(specs, records, predictions, source["temperature"])
-    write_jsonl(out / "predictions_development.jsonl", predictions)
-    write_jsonl(out / "scored_development.jsonl", rows)
-    write_keyword_csv(out / "keywords.csv", records, rows)
-    summary = {
+    if len(predictions) != len(records):
+        raise SystemExit(f"{len(predictions)} predictions for {len(records)} records")
+
+    common = {
         "name": args.name,
         "run": run.to_dict(),
-        "tasks": tasks,
-        "lang": args.lang,
-        "levels": levels,
-        "records": len(records),
         "labels": "existing system's answers: accuracy is agreement with that system",
-        "source_run": {
-            "summary": f"s3://{bucket}/{run_key}/summary.json",
-            "git_commit": source.get("git_commit"),
-            "checkpoint": source.get("checkpoint"),
-            "temperature": source["temperature"],
-            "metrics_development": {k: v for k, v in source.get("metrics_development", {}).items()
-                                    if k.split("/")[0] in tasks and k.split("/")[1] == args.lang},
-        },
         "inference_precision": backend.inference_precision(),
         "git_commit": _git_commit(),
         "git_dirty": _git_dirty(),
         "data_manifest": data_manifest(args.data_root),
-        "model_inputs_sha256": {"development": inputs_sha},
-        "metrics_development": metrics,
-        "seconds": round(time.time() - started, 1),
+        "job_records": len(records),
+        "job_seconds": round(time.time() - started, 1),
     }
-    (out / "summary.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False))
-    print(json.dumps({k: v for k, v in metrics.items()}, ensure_ascii=False)[:2000], flush=True)
+    outputs = []
+    for task in tasks:
+        for lang in langs:
+            index = [i for i, r in enumerate(records) if r["task"] == task and r["lang"] == lang]
+            if not index:
+                print(f"no {task}/{lang} records in {args.data_root}; skipped", flush=True)
+                continue
+            part = [records[i] for i in index]
+            part_predictions = [predictions[i] for i in index]
+            out = Path(args.out) / "ab" / args.name / task / lang / run.run_id
+            out.mkdir(parents=True, exist_ok=True)
+            inputs_sha = save_model_inputs(out, "development", part)
+            rows, metrics = score(specs, part, part_predictions, source["temperature"])
+            write_jsonl(out / "predictions_development.jsonl", part_predictions)
+            write_jsonl(out / "scored_development.jsonl", rows)
+            write_keyword_csv(out / "keywords.csv", part, rows)
+            summary = {
+                **common,
+                "task": task,
+                "lang": lang,
+                "level": levels[task],
+                "records": len(part),
+                "source_run": {
+                    "summary": f"s3://{bucket}/{run_key}/summary.json",
+                    "git_commit": source.get("git_commit"),
+                    "checkpoint": source.get("checkpoint"),
+                    "temperature": source["temperature"],
+                    "metrics_development": {k: v for k, v in source.get("metrics_development", {}).items()
+                                            if k.startswith(f"{task}/{lang}/")},
+                },
+                "model_inputs_sha256": {"development": inputs_sha},
+                "metrics_development": metrics,
+            }
+            (out / "summary.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False))
+            print(task, lang, json.dumps(metrics, ensure_ascii=False)[:600], flush=True)
+            outputs.append((out, f"{key_prefix.rstrip('/')}/ab/{args.name}/{task}/{lang}/{run.run_id}".lstrip("/")))
 
     if os.environ.get("SM_MODEL_DIR"):
-        dest = f"{key_prefix.rstrip('/')}/ab/{args.name}/{run.run_id}".lstrip("/")
-        for path in sorted(out.rglob("*")):
-            if path.is_file():
-                s3.upload_file(str(path), bucket, f"{dest}/{path.relative_to(out)}")
-        print(f"uploaded -> s3://{bucket}/{dest}/", flush=True)
+        for out, dest in outputs:
+            for path in sorted(out.rglob("*")):
+                if path.is_file():
+                    s3.upload_file(str(path), bucket, f"{dest}/{path.relative_to(out)}")
+            print(f"uploaded -> s3://{bucket}/{dest}/", flush=True)
         if checkpoint is not None:
             shutil.rmtree(checkpoint, ignore_errors=True)
-
 
 if __name__ == "__main__":
     main()

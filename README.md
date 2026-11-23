@@ -131,7 +131,8 @@ python scripts/ab_launch.py --model chon-1.0-e4b --group J-best --seed 0 --task 
   --role ... --image-uri ... --spot
 ```
 
-결과는 `runs/ab/{name}/{run_id}/`: `summary.json`(일치율), `keywords.csv`(키워드별 기존 라벨·모델 답·확률·일치), `scored_development.jsonl`.
+여러 태스크·언어는 한 작업에 넣으면(`--task s2,s4,s5 --lang ko,ja,en`) 모델을 한 번만 띄워 모두 예측하고, 태스크·언어마다 따로 채점해 저장합니다.
+결과는 `runs/ab/{name}/{task}/{lang}/{run_id}/`: `summary.json`(일치율), `keywords.csv`(키워드별 기존 라벨·모델 답·확률·일치), `scored_development.jsonl`.
 `--spot`은 따로 잡힌 스팟 한도를 써서 온디맨드 작업과 동시에 돕니다.
 
 ## 모델 추가하기
