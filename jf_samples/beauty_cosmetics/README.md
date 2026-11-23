@@ -3,7 +3,7 @@
 Journey Finder 뷰티/화장품 프로젝트 3개(국가별 1개)의 단계별 결과를 **키워드 한 줄 = 한 행** JSONL.gz로 풀어 둔 것입니다.
 S2 Span 판정 유형 번호(0~7)가 남아 있고, S3~S5 오류가 0건인 run만 골랐습니다.
 
-| 국가 | job_id | 끝난 시각(UTC) | 카테고리 | 시드 | S1 키워드 | S2 유관 = S3~S6 키워드 |
+| 국가 | job_id | 끝난 시각(UTC) | 카테고리 | 시드 | S1 키워드 | S3~S6 키워드 |
 |---|---|---|---|---|---|---|
 | kr | `8f228742-7a57-4ed0-9cd2-4829decf5791` | 2026-11-10 09:25 | 남성 기초 스킨케어 | 남자 화장품 | 1,651 | 1,237 |
 | jp | `06ab26ab-bcce-4911-a18e-4bcbf9922684` | 2026-11-10 04:11 | 韓国コスメのファンデーション | wakemake 외 4개 | 2,247 | 870 |
@@ -18,7 +18,6 @@ S2 Span 판정 유형 번호(0~7)가 남아 있고, S3~S5 오류가 0건인 run�
 - run 상태 DONE, S2 LLM 실패 0건, Span `unknown` 0건
 - Span 트랙 키워드 전부에 `type_num`이 있음 (kr 1,409 · jp 1,961 · us 388건)
 - S3·S4·S5 오류 0건. 오류가 나면 그 키워드는 S3 이후 결과에서 빠집니다.
-- S2 유관 키워드 수 = S3~S6 키워드 수 (단계 요약의 `relevant_total`과 같음)
 
 jp는 조건을 만족하는 뷰티/화장품 run이 이것 하나뿐입니다.
 kr·us는 키워드가 더 많은 스킨케어 run도 있지만 S3·S4 오류가 있어 빼었습니다.
@@ -27,10 +26,10 @@ kr·us는 키워드가 더 많은 스킨케어 run도 있지만 S3·S4 오류가
 
 - 단계별 캐시는 7일 뒤 지워져서 없습니다. **최종 산출물 `result.json.gz`에서 다시 풀어낸 것**입니다.
   - S1·S2는 `keyword_meta`에서 가져왔습니다(확장된 키워드 전체).
-  - S3~S5는 `cdj_results`에서 가져왔습니다(S2 유관 키워드만). S3·S4 값은 S5까지 그대로 넘어온 값입니다.
+  - S3~S5는 `cdj_results`에서 가져왔습니다(S2에서 유관으로 넘어간 키워드만). S3·S4 값은 S5까지 그대로 넘어온 값입니다.
   - S6은 `data.{단계}.tree`에서 가져왔습니다.
 - 단계 캐시에만 있던 값은 없습니다. 예: SERP 스니펫, LLM 원문 응답, S2 유형 1·2·7에 붙던 설명(detail), CEP 트랙 판정 근거.
-- S2 `relevant`는 `keyword_meta.rel`이 아니라 **S3 입력에 들어갔는지**로 정했습니다. CEP 트랙에서 같은 키워드가 두 번 판정되면 `keyword_meta.rel`에는 마지막 판정만 남습니다. 그래서 실제로는 유관으로 넘어간 키워드가 `false`로 보이는 경우가 있습니다(kr 8건, jp 2건). S3~S5 오류가 0건인 run이라 S3 입력 = S2 유관 목록입니다.
+- S2 `relevant`는 결과 파일에 저장된 `keyword_meta.rel` 그대로입니다. CEP 트랙은 같은 키워드를 상황·질문마다 따로 판정하는데, `rel`에는 마지막 판정만 남습니다. 그래서 `relevant`가 `false`인데 S3~S6에 있는 CEP 키워드가 있습니다(kr 8건, jp 2건). Span 트랙은 키워드마다 한 번만 판정해서 이런 일이 없습니다.
 - 단계별 집계(stats)는 국가별 `meta.json`의 `steps`에 있습니다.
 
 ## 파일
@@ -41,10 +40,10 @@ kr·us는 키워드가 더 많은 스킨케어 run도 있지만 S3·S4 오류가
 |---|---|---|
 | `s1_keyword_expansion.jsonl.gz` | 확장 키워드 전체 | `volume` 월 검색량, `seeds` 이 키워드를 낳은 시드, `sources` 출처(`Seed`·`ES`·`graphDB`·`CEP`), `graph_hops` 시드별 그래프 홉(+ 정방향, - 역방향, 그래프 키워드만) |
 | `s2_relevance.jsonl.gz` | 확장 키워드 전체 | `track` 판정 트랙(`span`·`cep`·`seed`), `relevant` 유관 여부, `type_num` Span 판정 유형(0~7, Span이 아니면 `null`) |
-| `s3_attributes.jsonl.gz` | S2 유관 키워드 | `target`, `intent`, `site` |
-| `s4_brand.jsonl.gz` | S2 유관 키워드 | `brand` 브랜드 키워드 여부, `brand_part` 브랜드 부분 |
-| `s5_cdj.jsonl.gz` | S2 유관 키워드 | `brand`, `cdj_stage`, `stage_num` 모델 출력 번호, `error` |
-| `s6_topics.jsonl.gz` | S2 유관 키워드 | `cdj_stage`, `topic_path` 루트→leaf 라벨, `cluster_id` leaf 노드 id, `method`(`llm`·`auto`) |
+| `s3_attributes.jsonl.gz` | S3로 넘어간 키워드 | `target`, `intent`, `site` |
+| `s4_brand.jsonl.gz` | S3로 넘어간 키워드 | `brand` 브랜드 키워드 여부, `brand_part` 브랜드 부분 |
+| `s5_cdj.jsonl.gz` | S3로 넘어간 키워드 | `brand`, `cdj_stage`, `stage_num` 모델 출력 번호, `error` |
+| `s6_topics.jsonl.gz` | S3로 넘어간 키워드 | `cdj_stage`, `topic_path` 루트→leaf 라벨, `cluster_id` leaf 노드 id, `method`(`llm`·`auto`) |
 | `meta.json` | - | 시드, 산업군·카테고리, 단계별 이름·끝난 시각·stats, 파일별 행 수 |
 
 ### S2 `type_num` (Span 트랙)

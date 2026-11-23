@@ -47,15 +47,12 @@ def export(country, job_id, out_root):
     step_meta = {n: json.load(open(ROOT / job_id / f"{n}.meta.json")) for n in range(1, 7)}
     errors = {n: step_meta[n]["stats"].get("error", 0) for n in (3, 4, 5)}
     if any(errors.values()):
-        # S3·S4 오류 키워드는 cdj_results에서 빠져, 아래 relevant 계산이 틀어진다
+        # S3·S4 오류 키워드는 cdj_results에서 빠진다 — 단계 결과가 온전한 run만 받는다
         raise SystemExit(f"{country} {job_id}: S3~S5 오류가 있다 {errors}")
     out = out_root / country
     out.mkdir(parents=True, exist_ok=True)
     km = d["keyword_meta"]
     cdj = d["cdj_results"]
-    # S3 입력 = S2 relevant_keywords. S3~S5 오류가 없으면 cdj_results 키워드 집합과 같다.
-    # keyword_meta.rel은 같은 키워드가 CEP에서 두 번 판정되면 마지막 판정만 남아 이 집합과 어긋난다.
-    relevant = {r["keyword"] for r in cdj}
     method = {(st, r["keyword"]): r.get("method") for st, p in d["data"].items() for r in p.get("keyword_results") or []}
     topics = topic_index(d["data"])
 
@@ -64,7 +61,7 @@ def export(country, job_id, out_root):
         {"keyword": k, "volume": v.get("v"), "seeds": v.get("sd", []), "sources": v.get("src", []),
          "graph_hops": v.get("hp")} for k, v in km.items()])
     counts["s2_relevance"] = write(out / "s2_relevance.jsonl.gz", [
-        {"keyword": k, "track": track(v), "relevant": k in relevant, "type_num": v.get("tn")}
+        {"keyword": k, "track": track(v), "relevant": v.get("rel"), "type_num": v.get("tn")}
         for k, v in km.items()])
     counts["s3_attributes"] = write(out / "s3_attributes.jsonl.gz", [
         {"keyword": r["keyword"], "target": r["target"], "intent": r["intent"], "site": r["site"]} for r in cdj])
