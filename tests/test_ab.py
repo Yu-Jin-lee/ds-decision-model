@@ -122,7 +122,7 @@ def test_ab_job_scores_with_the_runs_checkpoint_and_temperature(tmp_path, monkey
 
     out = tmp_path / "out" / "ab" / "t" / "chon-1.0-e4b" / "J-best" / "s0"
     result = json.loads((out / "summary.json").read_text())
-    assert result["level"] == "choice" and result["records"] == 2
+    assert result["levels"] == {"s5": "choice"} and result["records"] == 2
     assert result["source_run"]["temperature"] == 1.4
     assert backend.checkpoint == tmp_path / "ck" / "chon-1.0-e4b" / "J-best" / "s0" / "checkpoint" / "checkpoint"
     assert result["metrics_development"]["s5/ko/choice"]["accuracy"] == 0.5
@@ -155,3 +155,44 @@ def test_vllm_env_turns_off_the_flashinfer_sampler(monkeypatch):
 
     monkeypatch.delenv("VLLM_USE_FLASHINFER_SAMPLER", raising=False)
     assert _clean_env()["VLLM_USE_FLASHINFER_SAMPLER"] == "0"
+
+
+def test_jf_s2_and_s4_rows_become_the_training_input_format(tmp_path):
+    from decision_model.config import CONFIG_DIR, load_yaml
+    from decision_model.data import build_records
+    from decision_model.formats import load_task_specs
+
+    s2 = tmp_path / "s2.csv"
+    with open(s2, "w", encoding="utf-8-sig", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(["country", "job_id", "keyword", "industry", "category", "market", "seeds", "serp", "serp_type",
+                         "serp_source", "serp_requested_at", "run_serp_query", "type_num", "type_label", "relevant"])
+        writer.writerow(["kr", "j", "남자 화장품", "뷰티/화장품", "남성 기초 스킨케어", "m", "남자 화장품",
+                         json.dumps({"ai_overview": "개요"}, ensure_ascii=False), "", "", "", "", "0", "related", "True"])
+        writer.writerow(["kr", "j", "남자 알바", "뷰티/화장품", "남성 기초 스킨케어", "m", "남자 화장품", "", "", "", "", "",
+                         "3", "hiring", "False"])
+    s4 = tmp_path / "s4.csv"
+    with open(s4, "w", encoding="utf-8-sig", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(["country", "job_id", "keyword", "target", "serp", "serp_type", "serp_source", "serp_requested_at",
+                         "run_serp_query", "llm_called", "brand", "brand_part"])
+        writer.writerow(["kr", "j", "헤라 옴므", "헤라", "", "", "", "", "", "True", "True", "헤라"])
+        writer.writerow(["kr", "j", "남자 스킨", "", "", "", "", "", "", "False", "False", ""])
+    data = tmp_path / "data"
+    for task, path in (("s2", s2), ("s4", s4)):
+        master = tmp_path / f"{task}.jsonl"
+        subprocess.run([sys.executable, str(REPO / "scripts" / "jf_to_master.py"), "--task", task, "--csv", str(path),
+                        "--out", str(master)], check=True)
+        subprocess.run([sys.executable, str(REPO / "scripts" / "prepare_data.py"), "--task", task, "--master", str(master),
+                        "--out", str(data)], check=True)
+    specs = load_task_specs(load_yaml(CONFIG_DIR / "tasks.yaml"))
+    records = build_records(data, specs, {"s2": "choice", "s4": "both"}, ["ko"], "development", with_labels=True,
+                            for_prediction=True)
+    s2r = [r for r in records if r["task"] == "s2"]
+    s4r = [r for r in records if r["task"] == "s4"]
+    assert [r["gold"] for r in s2r] == ["related", "hiring"]
+    assert s2r[0]["state"]["category"] == ["남성 기초 스킨케어"] and s2r[0]["state"]["seeds"] == ["남자 화장품"]
+    assert s2r[0]["state"]["industry"] == "뷰티/화장품"
+    assert [r["gold"] for r in s4r] == ["brand", "nonbrand"]
+    assert s4r[0]["state"]["target"] == ["헤라"] and s4r[1]["state"]["target"] == []
+    assert sorted(s4r[0]["questions"]) == ["s4_choice", "s4_noul"]

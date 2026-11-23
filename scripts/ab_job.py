@@ -44,14 +44,14 @@ def write_keyword_csv(path: Path, records: list[dict], rows: list[dict]) -> None
     """One line per keyword and question: the existing label, the model's answer and its probability."""
     import csv
 
-    keywords = {r["id"]: r["state"].get("keyword") for r in records}
+    keywords = {(r["task"], r["id"]): r["state"].get("keyword") for r in records}
     with open(path, "w", encoding="utf-8-sig", newline="") as handle:
         writer = csv.writer(handle)
-        writer.writerow(["id", "keyword", "variant", "view", "existing_label", "model_label", "model_prob",
+        writer.writerow(["id", "task", "keyword", "variant", "view", "existing_label", "model_label", "model_prob",
                          "match", "existing_label_prob"])
         for row in rows:
             dist = row["distribution"]
-            writer.writerow([row["id"], keywords.get(row["id"]), row.get("variant"), row["view"], row["gold"],
+            writer.writerow([row["id"], row["task"], keywords.get((row["task"], row["id"])), row.get("variant"), row["view"], row["gold"],
                              row["prediction"], round(dist[row["prediction"]], 4), int(row["gold"] == row["prediction"]),
                              round(dist.get(row["gold"], 0.0), 4)])
 
@@ -61,7 +61,7 @@ def main() -> None:
     parser.add_argument("--model", required=True)
     parser.add_argument("--group", required=True)
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--task", required=True)
+    parser.add_argument("--task", required=True, help="one task, or several joined by commas (s2,s4)")
     parser.add_argument("--lang", required=True)
     parser.add_argument("--name", required=True, help="name of the outside data set, e.g. jf-beauty-kr-s5")
     parser.add_argument("--data-root", default=os.environ.get("SM_CHANNEL_DATA", "data_ab"))
@@ -90,9 +90,11 @@ def main() -> None:
 
     started = time.time()
     run = find_run(args.model, args.group, args.seed)
-    if args.task not in run.levels:
-        raise SystemExit(f"{run.run_id} was not trained on {args.task} (levels {run.levels})")
-    level = run.levels[args.task]
+    tasks = [t.strip() for t in args.task.split(",") if t.strip()]
+    missing = [t for t in tasks if t not in run.levels]
+    if missing:
+        raise SystemExit(f"{run.run_id} was not trained on {missing} (levels {run.levels})")
+    levels = {t: run.levels[t] for t in tasks}
 
     s3 = boto3.client("s3")
     bucket, _, key_prefix = args.runs_prefix.removeprefix("s3://").partition("/")
@@ -115,7 +117,7 @@ def main() -> None:
         print(f"{run.run_id}: {count} checkpoint files -> {checkpoint}", flush=True)
 
     specs = load_task_specs(load_yaml(CONFIG_DIR / "tasks.yaml"))
-    records = build_records(args.data_root, specs, {args.task: level}, [args.lang], "development",
+    records = build_records(args.data_root, specs, levels, [args.lang], "development",
                             with_labels=True, for_prediction=True)
     out = Path(args.out) / "ab" / args.name / run.run_id
     out.mkdir(parents=True, exist_ok=True)
@@ -130,9 +132,9 @@ def main() -> None:
     summary = {
         "name": args.name,
         "run": run.to_dict(),
-        "task": args.task,
+        "tasks": tasks,
         "lang": args.lang,
-        "level": level,
+        "levels": levels,
         "records": len(records),
         "labels": "existing system's answers: accuracy is agreement with that system",
         "source_run": {
@@ -141,7 +143,7 @@ def main() -> None:
             "checkpoint": source.get("checkpoint"),
             "temperature": source["temperature"],
             "metrics_development": {k: v for k, v in source.get("metrics_development", {}).items()
-                                    if k.startswith(f"{args.task}/{args.lang}/")},
+                                    if k.split("/")[0] in tasks and k.split("/")[1] == args.lang},
         },
         "inference_precision": backend.inference_precision(),
         "git_commit": _git_commit(),

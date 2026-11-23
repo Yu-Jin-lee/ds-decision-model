@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Turn a Journey Finder task CSV (jf_samples/<industry>/tasks/s5.csv) into task-master rows.
+"""Turn a Journey Finder task CSV (jf_samples/<industry>/tasks/s2|s4|s5.csv) into task-master rows.
 
     python scripts/jf_to_master.py --task s5 --csv jf_samples/beauty_cosmetics/tasks/s5.csv --country kr \
         --out jf_s5_kr.jsonl.gz
@@ -7,8 +7,10 @@
 
 The rows take the same shape as the training masters (see tests/test_prepare.py), so prepare_data.py and
 configs/tasks.yaml turn them into exactly the model input, questions and label set the models were trained and
-evaluated with: target / intent / site as lists, the SERP as {ai_overview, features}, brand as kind
-brand / generic, id "<country>:<keyword>". Every row goes to the development partition.
+evaluated with: list fields as lists (S2 category and seeds, S4/S5 target, S5 intent and site), the SERP as
+{ai_overview, features}, brand as kind brand / generic, S2's type number as is, id "<country>:<keyword>".
+Every row goes to the development partition. S4 keeps whether JF asked its LLM (kind_source jf_gemma) or
+decided by rule (jf_rule), so the two can be told apart in the results.
 
 The label is the existing system's answer (JF's Gemma output), not a human label: scored against it,
 "accuracy" is agreement with that system.
@@ -63,7 +65,37 @@ def s5_row(row: dict[str, str]) -> dict:
     }
 
 
-ROW = {"s5": s5_row}
+def s2_row(row: dict[str, str]) -> dict:
+    return {
+        "id": f"{row['country']}:{row['keyword']}",
+        "lang": LANG[row["country"]],
+        "partition": "development",
+        "keyword": row["keyword"],
+        "type_num": row["type_num"],
+        "label_source": "jf_gemma",
+        "context": {"category_1depth": row["industry"], "category_2depth": split_list(row["category"]),
+                    "seeds": split_list(row["seeds"]), "job_id": row["job_id"], "source": "jf_samples"},
+        "serp": serp(row["serp"]),
+        "meta": {"gemma_wrong": None, "hard": None, "origin": "jf_samples"},
+    }
+
+
+def s4_row(row: dict[str, str]) -> dict:
+    return {
+        "id": f"{row['country']}:{row['keyword']}",
+        "lang": LANG[row["country"]],
+        "partition": "development",
+        "keyword": row["keyword"],
+        "kind": "brand" if row["brand"].strip().lower() == "true" else "generic",
+        "kind_source": "jf_gemma" if row.get("llm_called", "").strip().lower() == "true" else "jf_rule",
+        "target": split_list(row["target"]),
+        "serp": serp(row["serp"]),
+        "meta": {"gemma_wrong": None, "origin": "jf_samples", "brand_part": row.get("brand_part") or None},
+        "context": {"job_id": row["job_id"], "source": "jf_samples"},
+    }
+
+
+ROW = {"s2": s2_row, "s4": s4_row, "s5": s5_row}
 
 
 def main() -> None:
