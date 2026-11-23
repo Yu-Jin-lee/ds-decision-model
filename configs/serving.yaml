@@ -1,0 +1,14 @@
+# Serving profile for the speed comparison (scripts/run.py --serving, launcher --serving).
+#
+# The evaluation runs read each model on its exact path (Kev fp32, Laya fp32), which is right for accuracy
+# but not for speed. A serving run times every model the way it would be served: bf16 compute for all of
+# them, with each model's own fastest supported engine switched on (configs/models/<name>.yaml, key
+# `serving`). Everything else stays the same for every model.
+#
+# One instance for every model: the L40S the models are evaluated on. Gemma 4 26B-A4B needs ~52 GB in bf16,
+# more than its 48 GB, so Gemma alone keeps int8 weight-only quantization; it still computes in bf16.
+instance: ml.g6e.xlarge       # 1 x L40S (48 GB), 32 GB RAM
+volume_gb: 200                # Gemma download + resharded copy; Chon's merged checkpoint; vLLM venv
+
+# The same vLLM for every model that is read through vLLM (Gemma, Chon's reader).
+vllm_package: vllm==0.34.0

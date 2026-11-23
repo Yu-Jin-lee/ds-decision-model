@@ -20,6 +20,11 @@ Serving defaults keep the comparison with Kev fair: one forward pass per questio
 would snap probabilities to 0.2/0.8). The model config's ``serve_args`` replaces them.
 Chon still applies its own per-type temperatures from ``chon_config.json``; our
 calibration fits one more temperature on top, as for every backend.
+
+A serving run (``serving``) reads the option letters through vLLM (``--reader vllm``: the adapter merged into its
+base, bf16, prefix caching), the engine Gemma is served with. vLLM lives in its own venv (installed by
+sagemaker/entry.py); it is started through a wrapper that keeps the image's Python paths out of it, and
+``CHON_VLLM_STRICT=1`` stops the run if it does not start rather than timing the in-process reader.
 """
 
 from __future__ import annotations
@@ -28,6 +33,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.error
 import urllib.request
@@ -86,6 +92,21 @@ def finetuned_config(release_cfg: dict[str, Any], train_info: dict[str, Any]) ->
     cfg["temperatures"] = {"choice": 1.0, "noul": 1.0, "score": 1.0}
     cfg["fine_tuned"] = train_info
     return cfg
+
+
+def clean_vllm_bin(venv: Path | None = None, directory: Path | None = None) -> Path:
+    """A ``vllm`` launcher that drops the image's Python paths, then runs the vLLM venv's own binary.
+
+    chon.serve starts the vLLM reader with its own environment, which the training image fills with
+    PYTHONPATH and friends; vLLM brings its own torch and must not load the image's."""
+    from .prompt_llm import DEFAULT_VLLM_VENV
+
+    real = Path(venv or DEFAULT_VLLM_VENV) / "bin" / "vllm"
+    directory = Path(directory or tempfile.mkdtemp(prefix="chon-vllm-"))
+    wrapper = directory / "vllm"
+    wrapper.write_text(f"#!/bin/sh\nunset PYTHONPATH PYTHONHOME VIRTUAL_ENV CONDA_PREFIX\nexec {real} \"$@\"\n")
+    wrapper.chmod(0o755)
+    return wrapper
 
 
 class ChonBackend(Backend):
@@ -191,10 +212,28 @@ class ChonBackend(Backend):
             return [predict_one(record) for record in records]
 
     def inference_precision(self) -> str:
-        return str(self.config.get("dtype", "bfloat16"))
+        dtype = str(self.config.get("dtype", "bfloat16"))
+        return f"{dtype} (chon --reader vllm)" if self.serving else f"{dtype} (chon, transformers reader)"
+
+    def serve_args(self) -> list[str]:
+        args = self.serving_config.get("serve_args") or self.config.get("serve_args", DEFAULT_SERVE_ARGS)
+        return [str(a) for a in args]
+
+    def serve_env(self, vllm_bin: Path | None = None) -> dict[str, str]:
+        """Environment for ``chon.serve``: no reread or deadline from the host; with the vLLM reader, where its
+        binary is, where the merged checkpoint goes, and stop rather than fall back to the in-process reader."""
+        env = dict(os.environ)
+        env.pop("CHON_REREAD", None)
+        env.pop("CHON_DEADLINE_S", None)
+        if self.serving:
+            env["CHON_VLLM_STRICT"] = "1"
+            env.setdefault("CHON_MERGED_DIR", "/opt/ml/models/chon-merged")   # on the job's data volume
+            if vllm_bin is not None:
+                env["CHON_VLLM_BIN"] = str(vllm_bin)
+        return env
 
     def serve_command(self, port: int, checkpoint: Path | None = None) -> list[str]:
-        args = [str(a) for a in self.config.get("serve_args", DEFAULT_SERVE_ARGS)]
+        args = self.serve_args()
         model = str(checkpoint) if checkpoint is not None else self.config["checkpoint"]
         return [sys.executable, "-m", "chon.serve", "--model", model,
                 "--dtype", str(self.config.get("dtype", "bfloat16")), "--port", str(port), *args]
@@ -204,9 +243,7 @@ class ChonBackend(Backend):
         """Start ``chon.serve`` once (the release, or a fine-tuned package from ``train``); each call sends one
         record to ``/v1/systemone``."""
         port = _free_port()
-        env = dict(os.environ)
-        env.pop("CHON_REREAD", None)
-        env.pop("CHON_DEADLINE_S", None)
+        env = self.serve_env(clean_vllm_bin() if self.serving else None)
         server = subprocess.Popen(self.serve_command(port, checkpoint), env=env)
         base_url = f"http://127.0.0.1:{port}"
         try:

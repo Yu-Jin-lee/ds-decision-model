@@ -87,6 +87,34 @@ python scripts/run.py --model kev-4b --group J-best --seed 0 --checkpoint <압�
 
 체크포인트는 새 실행 폴더의 `checkpoint/checkpoint/`로 복사되어 함께 올라가고, `summary.json`의 `resumed_from`에 원래 위치가 남습니다.
 
+### 속도 비교: serving 프로필로 다시 재기
+
+평가 실행은 정확도를 위해 모델마다 정확한 경로로 읽습니다(Kev fp32, Laya fp32).
+이 설정 그대로 잰 속도는 모델끼리 비교할 수 없습니다. `--serving`은 끝난 실행을 **운영에서 서빙하는 방식**으로 다시 잽니다.
+
+| 조건 | 모든 모델 공통 (`configs/serving.yaml`) |
+|---|---|
+| 인스턴스 | `ml.g6e.xlarge` (L40S 48GB 1장), 평가와 같은 인스턴스 |
+| 정밀도 | bf16 계산. Gemma만 bf16 가중치(~52GB)가 48GB에 안 들어가 가중치를 int8로 둠(weight-only, 계산은 bf16) |
+| 측정 | 같은 레코드(칸별 30건), 배치 1, 순서대로. 워밍업은 측정 표본 밖의 레코드 10건 |
+
+| 모델 | 서빙 경로 (`configs/models/*.yaml`의 `serving`) |
+|---|---|
+| Gemma | vLLM, 평가와 같은 플래그 (int8 가중치, bf16 계산) |
+| Chon | `chon.serve --reader vllm` (어댑터 병합 후 vLLM으로 선택지 글자를 읽음, Gemma와 같은 vLLM 버전) |
+| Kev | `kev.serve` 기본 서빙 설정: bf16, CUDA graph, fused Qwen3.5 커널(`flash-linear-attention` 설치) |
+| Laya | bf16 autocast |
+
+```bash
+# 끝난 실행(B0는 공개본, 학습한 실행은 --output의 체크포인트)을 serving 프로필로 다시 잼
+python scripts/launch_sagemaker.py --model kev-4b --group B0-s5-choice --group S-s5-choice --seed 0 \
+  --batch --serving --data ... --output s3://BUCKET/ds-jf-decision-model/runs/ --role ... --image-uri ...
+```
+
+결과는 `runs/serving/{모델}/{실험군}/s{seed}/`에 따로 저장되고 평가 실행은 건드리지 않습니다.
+`summary.json`의 `latency_development`가 속도이고, `metrics_development`는 serving 경로의 정확도입니다(평가 경로와 답이 같은지 확인용).
+Chon의 vLLM이나 Kev의 fused 커널이 뜨지 않으면 조용히 느린 경로로 재지 않고 실행이 실패합니다.
+
 ## 모델 추가하기
 
 1. `configs/models/<이름>.yaml`을 만듭니다. `backend`로 학습 방식을 고릅니다.
@@ -120,11 +148,13 @@ python scripts/run.py --model kev-4b --group J-best --seed 0 --checkpoint <압�
 **Kev** (`backends/kev.py`)
 - Kev 저장소의 `kev.train`과 `kev.serve`를 그대로 호출합니다. `KEV_DIR`(기본 `/opt/kev`)에 저장소가 있어야 합니다.
 - 평가는 보정 전 확률(`KEV_TEMPERATURE=1.0`)과 fp32 경로로 받고, 보정은 공통 코드에서 합니다.
+- fp32 경로는 Kev의 서빙 기본값(bf16, CUDA graph, fused 커널)을 끄므로 속도 비교에는 쓰지 않습니다. 속도는 `--serving`으로 잽니다.
 
 ## 아직 GPU에서 확인하지 않은 것
 
 - Clef-Flash 학습은 CPU에서 가짜 모델로 흐름만 검증했습니다(`tests/test_clef_backend.py`). Laya는 laya 패키지 대신 가짜 함수로 선택지 순서와 변환만 검증했습니다(`tests/test_laya_backend.py`). 실제 모델로는 스모크 학습에서 메모리, 커널, bf16 autocast 동작을 확인해야 합니다.
 - Kev 학습 옵션은 실험 설계서의 명령을 따랐습니다. Kev 저장소 버전에 맞는지 스모크 학습에서 확인합니다.
+- serving 프로필(`--serving`)은 가짜 서버로 흐름만 검증했습니다. Kev 가상환경에 `flash-linear-attention==0.5.2`가 설치되고 L40S에서 fused 커널이 도는지, Chon의 vLLM 리더가 vLLM 0.34.0과 병합한 Gemma 4 E2B/E4B로 뜨는지는 첫 실행에서 확인해야 합니다.
 - `configs/tasks.yaml`의 질문 문구와 선택지 설명은 임시입니다. 운영에서 보낼 문구로 바꿔야 합니다.
 
 ## 테스트

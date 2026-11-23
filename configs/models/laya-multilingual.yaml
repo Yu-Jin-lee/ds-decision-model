@@ -22,3 +22,7 @@ train:
   eval_batch: 32
 
 instance: ml.g6e.xlarge
+
+# Serving profile (scripts/run.py --serving, configs/serving.yaml): bf16 autocast instead of fp32.
+serving:
+  autocast: bf16

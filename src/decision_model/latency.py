@@ -11,7 +11,10 @@ What is held fixed, so the numbers compare across models and runs:
 * Batch size 1, records one after another. Kev's serving API takes one record
   per request, so batch 1 is the only setting all three models share.
 * The model is already loaded and ``warmup`` records are run first and not
-  counted. Model loading, calibration and scoring are not timed.
+  counted. They are records outside the timed sample (the next ones in hash
+  order), so a server that caches whole prompts (vLLM's prefix cache) has never
+  seen a timed record before it is timed. Model loading, calibration and scoring
+  are not timed.
 * GPU work is finished before the clock is read (``torch.cuda.synchronize``).
 * Same instance type for every run (configs/models/*.yaml); the environment is
   recorded next to the numbers.
@@ -41,6 +44,18 @@ def sample_records(records: list[dict[str, Any]], per_cell: int = PER_CELL) -> l
         ordered = sorted(cells[key], key=lambda r: hashlib.sha256(r["id"].encode()).hexdigest())
         picked += ordered[:per_cell]
     return sorted(picked, key=lambda r: hashlib.sha256(r["id"].encode()).hexdigest())
+
+
+def _hash_order(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return sorted(records, key=lambda r: hashlib.sha256(r["id"].encode()).hexdigest())
+
+
+def warmup_records(records: list[dict[str, Any]], sample: list[dict[str, Any]], warmup: int = WARMUP) -> list[dict[str, Any]]:
+    """``warmup`` records that are not in the timed sample, in hash order (falls back to the sample when the
+    data has no others, e.g. a tiny test set)."""
+    timed = {id(r) for r in sample}
+    others = _hash_order([r for r in records if id(r) not in timed])
+    return (others or _hash_order(sample))[:warmup]
 
 
 def _sync() -> None:
@@ -97,9 +112,11 @@ def measure(
     sample = sample_records(records, per_cell)
     if not sample:
         return {"records": 0}
-    for record in sample[: min(warmup, len(sample))]:
+    warm = warmup_records(records, sample, warmup)
+    for record in warm:
         predict_one(record)
     _sync()
+    timed_ids = {id(r) for r in sample}
 
     by_task: dict[str, list[float]] = defaultdict(list)
     all_ms: list[float] = []
@@ -119,7 +136,8 @@ def measure(
         "by_task": {task: _stats(ms) for task, ms in sorted(by_task.items())},
         "conditions": {
             "per_cell": per_cell,
-            "warmup": warmup,
+            "warmup": len(warm),
+            "warmup_outside_sample": all(id(r) not in timed_ids for r in warm),
             "batch_size": 1,
             "unit": "one record, all its questions, end to end",
             "sample_sha256": hashlib.sha256("\n".join(r["id"] for r in sample).encode()).hexdigest(),

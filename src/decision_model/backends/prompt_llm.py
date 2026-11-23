@@ -139,8 +139,12 @@ class PromptLLMBackend(Backend):
     def train(self, records, out_dir, seed, replay=0, replay_records=None):  # noqa: ANN001
         raise NotImplementedError(f"{self.config['name']} is a reference baseline and is not fine-tuned; use a P0-* group")
 
+    def vllm_args(self) -> list[str]:
+        """vLLM server flags: the serving profile's ``vllm_args`` when it gives them, else the evaluation ones."""
+        return [str(a) for a in (self.serving_config.get("vllm_args") or self.vllm.get("args", []))]
+
     def inference_precision(self) -> str:
-        args = self.vllm.get("args", [])
+        args = self.vllm_args()
         quant = args[args.index("--quantization") + 1] if "--quantization" in args else "none"
         dtype = args[args.index("--dtype") + 1] if "--dtype" in args else "auto"
         return f"{dtype} compute, {quant} weights (vLLM {self.vllm_version()})"
@@ -169,7 +173,7 @@ class PromptLLMBackend(Backend):
         model_path = os.environ.get("VLLM_MODEL_PATH") or self.config["checkpoint"]
         command = [str(self.venv / "bin" / "vllm"), "serve", model_path,
                    "--served-model-name", self.config["checkpoint"],
-                   "--port", str(port), "--host", "127.0.0.1", *[str(a) for a in self.vllm.get("args", [])]]
+                   "--port", str(port), "--host", "127.0.0.1", *self.vllm_args()]
         print("+", " ".join(command), flush=True)
         server = subprocess.Popen(command, env=_clean_env())
         base_url = f"http://127.0.0.1:{port}"
