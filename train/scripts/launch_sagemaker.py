@@ -99,7 +99,7 @@ def git_state() -> tuple[str, str]:
 
     try:
         commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=REPO, text=True).strip()
-        dirty = subprocess.check_output(["git", "status", "--porcelain"], cwd=REPO, text=True).strip()
+        dirty = subprocess.check_output(["git", "status", "--porcelain", "--", "."], cwd=REPO, text=True).strip()
     except (OSError, subprocess.CalledProcessError):
         return "unknown", "1"
     return commit, "1" if dirty else "0"
