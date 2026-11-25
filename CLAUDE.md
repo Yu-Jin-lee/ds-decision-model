@@ -11,7 +11,7 @@ Journey Finder의 판단 단계(S2·S4·S5)를 운영 LLM(Gemma) 대신 작은 *
 | S4 브랜드/논브랜드 | target이 브랜드인지 | brand, nonbrand | [dataset/criteria/s4.md](dataset/criteria/s4.md) |
 | S5 CDJ 단계 | 키워드의 구매 여정 단계 | 브랜드 5단계 / 논브랜드 3단계 | [dataset/criteria/s5.md](dataset/criteria/s5.md) |
 
-실험 모델은 `kev-4b`, `laya-multilingual`, `chon-1.0-e4b`, `chon-1.0-e2b`(B0만) 4개입니다. `clef-flash`, `kev-9b`, `gemma-4-26b-a4b`는 설정·코드만 있고 쓰지 않았습니다 ([train/README.md](train/README.md)의 모델 표).
+실험 모델은 `kev-4b`, `laya-multilingual`, `chon-1.0-e4b`, `chon-1.0-e2b`(B0만) 4개입니다. `clef-flash`, `kev-9b`는 설정·코드만 있고 쓰지 않았고, `gemma-4-26b-a4b`는 후보가 아니라 운영 Gemma 기준선(P0-*)입니다 ([train/README.md](train/README.md)의 모델 표).
 
 언어는 ko·ja·en(파일·id에서는 kr·jp·us)입니다. 칸은 태스크 × 언어 9개, 칸당 1,680건(train 1,000 / calibration 214 / development 214 / test 252)입니다.
 
