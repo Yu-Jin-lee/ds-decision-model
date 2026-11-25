@@ -66,7 +66,7 @@ def _git_dirty() -> bool | None:
         return os.environ["DECISION_MODEL_GIT_DIRTY"] == "1"
     try:
         status = subprocess.check_output(
-            ["git", "status", "--porcelain"], cwd=REPO_ROOT, text=True, stderr=subprocess.DEVNULL
+            ["git", "status", "--porcelain", "--", "."], cwd=REPO_ROOT, text=True, stderr=subprocess.DEVNULL
         )
     except (OSError, subprocess.CalledProcessError):
         return None

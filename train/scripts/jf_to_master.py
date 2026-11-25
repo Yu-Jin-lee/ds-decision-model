@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Turn a Journey Finder task CSV (jf_samples/<industry>/tasks/s2|s4|s5.csv) into task-master rows.
+"""Turn a Journey Finder task CSV (../jf_samples/<industry>/tasks/s2|s4|s5.csv) into task-master rows.
 
-    python scripts/jf_to_master.py --task s5 --csv jf_samples/beauty_cosmetics/tasks/s5.csv --country kr \
+    python scripts/jf_to_master.py --task s5 --csv ../jf_samples/beauty_cosmetics/tasks/s5.csv --country kr \
         --out jf_s5_kr.jsonl.gz
     python scripts/prepare_data.py --task s5 --master jf_s5_kr.jsonl.gz --out data_ab
 
