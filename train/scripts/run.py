@@ -3,8 +3,8 @@
 
 Locally or inside a SageMaker training job:
 
-    python scripts/run.py --model clef-flash --group S-s4-noul --seed 0
-    python scripts/run.py --model kev-9b --list --stage 1
+    python scripts/run.py --model kev-4b --group S-s4-noul --seed 0
+    python scripts/run.py --model kev-4b --list --stage 1
 
 Inside SageMaker the data channel and output directory come from the
 environment (SM_CHANNEL_DATA, SM_MODEL_DIR) unless given explicitly.

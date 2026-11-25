@@ -1,3 +1,4 @@
+# 미사용: 실험에 쓰지 않은 모델입니다(2026-11-25 기준). 설정만 남겨 둡니다. 실험 모델은 train/README.md의 '모델' 표.
 # Gemma 4 26B-A4B instruct (google/gemma-4-26B-A4B-it), used as is: no fine-tuning.
 # Reference baseline: the generative model the team uses today, measured on the same
 # data and instance as the decision models. It generates text with the production prompts

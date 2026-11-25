@@ -22,3 +22,4 @@
 | 2026-11-25 | 운영 | 라벨은 Git(`dataset/labels/`), 입력·SERP는 S3에 두고 manifest에 경로·sha256 기록 | 이 저장소 |
 | 2026-11-25 | 운영 | 학습데이터 구축(기준서·라벨·도구·회차 기록)은 `dataset/` 아래로 묶음 | 이 저장소 |
 | 2026-11-25 | 운영 | 학습·평가 코드를 `train/` 아래로 옮김. SageMaker는 `train/`만 올리고, dirty 판정도 `train/`만 봄 | [PR #9](https://github.com/Yu-Jin-lee/ds-decision-model/pull/9) |
+| 2026-11-25 | 학습 | 실험 모델은 kev-4b·laya-multilingual·chon-1.0-e4b·chon-1.0-e2b 4개. clef-flash·kev-9b·gemma-4-26b-a4b는 코드는 두고 문서에 미사용으로 표시 | [train/README.md](../train/README.md) |

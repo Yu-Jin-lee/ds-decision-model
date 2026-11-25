@@ -1,10 +1,24 @@
 # train - 결정모델 학습·평가
 
-결정모델(Kev, Clef-Flash, Laya 등)을 S2·S4·S5 × 한국어·일본어·영어로 파인튜닝하고 평가하는 코드입니다.
+결정모델(Kev, Laya, Chon)을 S2·S4·S5 × 한국어·일본어·영어로 파인튜닝하고 평가하는 코드입니다.
 **아래 명령은 모두 이 `train/` 폴더에서 실행합니다** (`cd train`). `data/`, `runs/`도 이 폴더 아래에 생깁니다.
 실험 설계는 [실험 설계서 - 결정모델 파인튜닝 (2026.11.16)](https://docs.google.com/document/d/1CQsWkZvSeysl-i-sbdY7u5qJDOJopjaNgnokIdAgZEc/edit)을 따릅니다.
 
 **무엇을 돌릴지는 `configs/`에, 어떻게 돌릴지는 코드에 둡니다.** 모델이나 실험군을 바꿀 때는 설정 파일만 고칩니다.
+
+## 모델
+
+실험에는 아래 4개만 썼습니다. 나머지 3개는 설정과 코드만 남아 있고 돌리지 않았습니다.
+
+| 모델 | 백엔드 | 실험 |
+|---|---|---|
+| `kev-4b` | kev | 사용 |
+| `laya-multilingual` | laya | 사용 |
+| `chon-1.0-e4b` | chon | 사용 |
+| `chon-1.0-e2b` | chon | 사용 (B0만) |
+| `clef-flash` | clef | **미사용**. 설정·백엔드 코드만 있음 |
+| `kev-9b` | kev | **미사용**. 설정만 있음 (`base_revision` 미정) |
+| `gemma-4-26b-a4b` | prompt_llm | **미사용**. 운영 Gemma를 기준선(P0-*)으로 재려고 만든 설정·코드만 있음 |
 
 ## 구조
 
@@ -15,7 +29,7 @@ configs/
   groups.yaml       실험군(B0, S-*, J+R-*), seed, 1단계에서 고른 형식
 src/decision_model/
   formats.py        질문 생성, 모델 답 → 최종 라벨 분포 변환 (모든 모델 공통)
-  backends/         모델 계열별 학습·추론 (kev.py, clef.py, laya.py)
+  backends/         모델 계열별 학습·추론 (kev.py, laya.py, chon.py / 미사용: clef.py, prompt_llm.py)
   calibration.py    temperature 하나를 calibration 파티션으로 맞춤
   metrics.py        정확도, Brier, ECE, 오류 5% 이내 자동 처리 비율, bootstrap
   evaluation.py     예측 → 칸별(태스크/언어/형식) 지표
@@ -37,13 +51,13 @@ python scripts/prepare_data.py --task s5 --master s5_master.jsonl.gz --out data
 #    tasks.yaml의 state 규칙으로 조립함. SERP 형식 등을 바꿔도 데이터를 다시 올릴 필요 없음
 
 # 2. 실행 목록 확인 (1단계 27회)
-python scripts/run.py --model clef-flash --list --stage 1
+python scripts/run.py --model kev-4b --list --stage 1
 
 # 3. 실행 하나 (GPU 장비에서)
-python scripts/run.py --model clef-flash --group S-s4-noul --seed 0
+python scripts/run.py --model kev-4b --group S-s4-noul --seed 0
 
 # 4. SageMaker로 한꺼번에 제출 (끝난 실행은 건너뜀)
-python scripts/launch_sagemaker.py --model clef-flash --stage 1 \
+python scripts/launch_sagemaker.py --model kev-4b --stage 1 \
   --data s3://BUCKET/ds-jf-decision-model/data/ --output s3://BUCKET/ds-jf-decision-model/runs/ \
   --role <SageMaker 실행 역할 ARN> --image-uri <학습 이미지> --dry-run
 
@@ -96,15 +110,15 @@ python scripts/run.py --model kev-4b --group J-best --seed 0 --checkpoint <압�
 | 조건 | 모든 모델 공통 (`configs/serving.yaml`) |
 |---|---|
 | 인스턴스 | `ml.g6e.xlarge` (L40S 48GB 1장), 평가와 같은 인스턴스 |
-| 정밀도 | bf16 계산. Gemma만 bf16 가중치(~52GB)가 48GB에 안 들어가 가중치를 int8로 둠(weight-only, 계산은 bf16) |
+| 정밀도 | bf16 계산. Gemma(미사용)만 bf16 가중치(~52GB)가 48GB에 안 들어가 가중치를 int8로 둠(weight-only, 계산은 bf16) |
 | 측정 | 같은 레코드(칸별 30건), 배치 1, 순서대로. 워밍업은 측정 표본 밖의 레코드 10건 |
 
 | 모델 | 서빙 경로 (`configs/models/*.yaml`의 `serving`) |
 |---|---|
-| Gemma | vLLM, 평가와 같은 플래그 (int8 가중치, bf16 계산) |
 | Chon | `chon.serve --reader vllm` (어댑터 병합 후 vLLM으로 선택지 글자를 읽음, Gemma와 같은 vLLM 버전) |
 | Kev | `kev.serve` 기본 서빙 설정: bf16, CUDA graph, fused Qwen3.5 커널(`flash-linear-attention` 설치) |
 | Laya | bf16 autocast |
+| Gemma (미사용) | vLLM, 평가와 같은 플래그 (int8 가중치, bf16 계산) |
 
 ```bash
 # 끝난 실행(B0는 공개본, 학습한 실행은 --output의 체크포인트)을 serving 프로필로 다시 잼
@@ -139,24 +153,17 @@ python scripts/ab_launch.py --model chon-1.0-e4b --group J-best --seed 0 --task 
 ## 모델 추가하기
 
 1. `configs/models/<이름>.yaml`을 만듭니다. `backend`로 학습 방식을 고릅니다.
-2. 기존 backend(kev, clef, laya)로 안 되는 모델이면 `src/decision_model/backends/`에 `train()`과 `predict()`를 구현한 클래스를 추가하고 `backends/__init__.py`에 등록합니다.
+2. 기존 backend(kev, laya, chon / 미사용: clef, prompt_llm)로 안 되는 모델이면 `src/decision_model/backends/`에 `train()`과 `predict()`를 구현한 클래스를 추가하고 `backends/__init__.py`에 등록합니다.
 3. 데이터, 질문 형식, 보정, 지표는 그대로 재사용됩니다.
 
 ## 모델별 메모
-
-**Clef-Flash** (`backends/clef.py`)
-- Cloudflare는 추론 코드(`joint_schema_model.py`)만 공개했습니다. 이 코드로 입력을 만들고, 학습 루프는 여기서 작성했습니다.
-- 백본은 고정하고 언어 모델의 모든 선형 층에 LoRA를 붙입니다(비전 인코더 제외). joint head는 전부 학습합니다.
-- 공식 학습 레시피가 없어 `configs/models/clef-flash.yaml`의 값은 시작점입니다. 파일럿에서 development로 조정합니다.
-- Clef는 한 레코드의 질문을 한 시퀀스에서 함께 판단합니다. Kev는 질문끼리 서로 보지 못합니다. "동시" 수준을 해석할 때 이 차이를 감안합니다.
-- replay를 쓰는 실험군(J+R-*)은 Kev 형식의 범용 데이터 파일이 필요합니다. `data/replay.jsonl`에 두거나 `--replay-file`로 지정합니다.
 
 **Laya** (`backends/laya.py`)
 - Laya 패키지의 학습 함수(`laya.train.train_model`)를 그대로 호출합니다. 체크포인트는 다국어용 `convaiinnovations/laya-multilingual`입니다.
 - 기본값은 공식 레시피입니다: 인코더와 헤드 전체를 학습하고, 손실은 RLCD입니다.
 - `configs/models/laya-multilingual.yaml`에서 `freeze_encoder: true`(헤드만 학습), `loss: soft-ce`(cross-entropy만)로 바꿀 수 있습니다. LoRA는 지원하지 않습니다.
 - Laya 자체의 calibration 분할과 temperature는 쓰지 않고, 다른 모델과 같은 공통 보정을 씁니다.
-- 질문마다 별도 시퀀스로 판단합니다(Kev와 같고 Clef와 다름).
+- 질문마다 별도 시퀀스로 판단합니다(Kev와 같음).
 - 입력이 `max_len`을 넘거나 선택지가 헤드 예산(`head_max_len`)에 안 들어가는 질문은 학습에서 빠지고, 평가에서는 균등 확률로 처리되며 `predictions_*.jsonl`의 `skipped`에 기록됩니다.
 
 **Chon** (`backends/chon.py`, `chon-1.0-e4b`)
@@ -171,9 +178,16 @@ python scripts/ab_launch.py --model chon-1.0-e4b --group J-best --seed 0 --task 
 - 평가는 보정 전 확률(`KEV_TEMPERATURE=1.0`)과 fp32 경로로 받고, 보정은 공통 코드에서 합니다.
 - fp32 경로는 Kev의 서빙 기본값(bf16, CUDA graph, fused 커널)을 끄므로 속도 비교에는 쓰지 않습니다. 속도는 `--serving`으로 잽니다.
 
+**Clef-Flash** (`backends/clef.py`) — 미사용
+- Cloudflare는 추론 코드(`joint_schema_model.py`)만 공개했습니다. 이 코드로 입력을 만들고, 학습 루프는 여기서 작성했습니다.
+- 백본은 고정하고 언어 모델의 모든 선형 층에 LoRA를 붙입니다(비전 인코더 제외). joint head는 전부 학습합니다.
+- 공식 학습 레시피가 없어 `configs/models/clef-flash.yaml`의 값은 시작점입니다. 파일럿에서 development로 조정합니다.
+- Clef는 한 레코드의 질문을 한 시퀀스에서 함께 판단합니다. Kev는 질문끼리 서로 보지 못합니다. "동시" 수준을 해석할 때 이 차이를 감안합니다.
+- replay를 쓰는 실험군(J+R-*)은 Kev 형식의 범용 데이터 파일이 필요합니다. `data/replay.jsonl`에 두거나 `--replay-file`로 지정합니다.
+
 ## 아직 GPU에서 확인하지 않은 것
 
-- Clef-Flash 학습은 CPU에서 가짜 모델로 흐름만 검증했습니다(`tests/test_clef_backend.py`). Laya는 laya 패키지 대신 가짜 함수로 선택지 순서와 변환만 검증했습니다(`tests/test_laya_backend.py`). 실제 모델로는 스모크 학습에서 메모리, 커널, bf16 autocast 동작을 확인해야 합니다.
+- Clef-Flash(미사용) 학습은 CPU에서 가짜 모델로 흐름만 검증했습니다(`tests/test_clef_backend.py`). Laya는 laya 패키지 대신 가짜 함수로 선택지 순서와 변환만 검증했습니다(`tests/test_laya_backend.py`). 실제 모델로는 스모크 학습에서 메모리, 커널, bf16 autocast 동작을 확인해야 합니다.
 - Kev 학습 옵션은 실험 설계서의 명령을 따랐습니다. Kev 저장소 버전에 맞는지 스모크 학습에서 확인합니다.
 - serving 프로필(`--serving`)은 가짜 서버로 흐름만 검증했습니다. Kev 가상환경에 `flash-linear-attention==0.5.2`가 설치되고 L40S에서 fused 커널이 도는지, Chon의 vLLM 리더가 vLLM 0.34.0과 병합한 Gemma 4 E2B/E4B로 뜨는지는 첫 실행에서 확인해야 합니다.
 - `configs/tasks.yaml`의 질문 문구와 선택지 설명은 임시입니다. 운영에서 보낼 문구로 바꿔야 합니다.

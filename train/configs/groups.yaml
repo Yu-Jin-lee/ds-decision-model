@@ -20,7 +20,7 @@ groups:
     tasks: [s2, s4, s5]
     sweep: all_levels
 
-  # Stage 0: generative reference baseline (e.g. Gemma 4), no training. It answers with
+  # Stage 0: generative reference baseline (e.g. Gemma 4), no training. Unused so far (gemma-4-26b-a4b not run). It answers with
   # the team's production prompts (configs/prompts/), parsed to a label; level `prompt`.
   # One group per task so latency samples match B0-<task>-* (30 records per language).
   P0-s2: {stage: 0, train: false, optional: true, tasks: [s2], levels: {s2: prompt}}
