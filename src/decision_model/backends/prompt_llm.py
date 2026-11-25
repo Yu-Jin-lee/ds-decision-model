@@ -212,6 +212,10 @@ def _clean_env() -> dict[str, str]:
     env = {k: v for k, v in os.environ.items() if k not in drop}
     # ~52 GB of weights: keep the Hugging Face cache on the job's data volume, not the container disk.
     env.setdefault("HF_HOME", os.environ.get("VLLM_HF_HOME", "/opt/ml/hf_cache"))
+    # vLLM's FlashInfer sampler JIT-compiles its kernels at engine start and needs the CUDA toolkit headers
+    # (curand.h), which the vLLM venv does not have: the 2026-11-23 serving job's engine stopped there. The
+    # answers are greedy one-line numbers, so the PyTorch sampler gives the same output.
+    env.setdefault("VLLM_USE_FLASHINFER_SAMPLER", "0")
     return env
 
 
