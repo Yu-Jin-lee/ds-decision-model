@@ -11,6 +11,8 @@ Journey Finder의 판단 단계(S2·S4·S5)를 운영 LLM(Gemma) 대신 작은 *
 | S4 브랜드/논브랜드 | target이 브랜드인지 | brand, nonbrand | [dataset/criteria/s4.md](dataset/criteria/s4.md) |
 | S5 CDJ 단계 | 키워드의 구매 여정 단계 | 브랜드 5단계 / 논브랜드 3단계 | [dataset/criteria/s5.md](dataset/criteria/s5.md) |
 
+실험 모델은 `kev-4b`, `laya-multilingual`, `chon-1.0-e4b`, `chon-1.0-e2b`(B0만) 4개입니다. `clef-flash`, `kev-9b`는 설정·코드만 있고 쓰지 않았고, `gemma-4-26b-a4b`는 후보가 아니라 운영 Gemma 기준선(P0-*)입니다 ([train/README.md](train/README.md)의 모델 표).
+
 언어는 ko·ja·en(파일·id에서는 kr·jp·us)입니다. 칸은 태스크 × 언어 9개, 칸당 1,680건(train 1,000 / calibration 214 / development 214 / test 252)입니다.
 
 ## 흐름과 폴더
@@ -18,7 +20,7 @@ Journey Finder의 판단 단계(S2·S4·S5)를 운영 LLM(Gemma) 대신 작은 *
 ```
 ── 학습데이터 구축 (dataset/) ────────────────────────────────────────────
 ① 기준 정의    dataset/criteria/*.md, dataset/criteria/sampling/*.yaml
-② 표본 추출    dataset/tools/  (원천 수집은 서버 저장소 ds-journey-finder-async)
+② 표본 추출    dataset/tools/  (설계만 있음. 지금까지는 서버 저장소 ds-journey-finder-async에서 함)
 ③ 모델 라벨    Gemma(운영 배치) + Claude(기준서로 전수 판정) → dataset/tools/
 ④ 사람 검수    불일치·보류 건만 → dataset/labels/{task}/
 ⑤ 마스터 고정  dataset/labels/{task}/ (라벨은 Git, 입력·SERP는 S3)
@@ -32,16 +34,16 @@ Journey Finder의 판단 단계(S2·S4·S5)를 운영 LLM(Gemma) 대신 작은 *
 |---|---|
 | `dataset/` | 학습데이터 구축 전부 ([dataset/README.md](dataset/README.md)) |
 | `dataset/criteria/` | 라벨링 기준서와 표본 기준. **기준의 원본** (Google Docs는 공유용 사본) |
-| `dataset/labels/` | 태스크별 라벨과 manifest(S3 입력 위치·sha256) |
-| `dataset/tools/` | 구축 도구: export → check → apply → validate → build-master |
+| `dataset/labels/` | 태스크별 manifest(상태, 원천 위치). 라벨 파일은 첫 작업 회차부터 채움 |
+| `dataset/tools/` | 구축 도구 설계: export → check → apply → validate → build-master. **코드는 아직 없음** |
 | `dataset/reports/` | 데이터 작업 회차별 기록 (방법, 결과, 수정 목록, 팀이 정할 것) |
 | `train/` | 학습·평가 파이프라인: `configs/`, `src/`, `scripts/`, `sagemaker/`, `tests/` ([train/README.md](train/README.md)). **명령은 `train/` 안에서 실행** |
 | `experiments/` | 학습 실험 기록 |
 | `docs/` | 결정 로그([decisions.md](docs/decisions.md)) |
 | `jf_samples/` | 운영 Journey Finder 결과 샘플 (산업군별). `train/scripts/jf_to_master.py`로 마스터로 바꿔 A/B 비교에 씀 |
 
-데이터 구축과 학습은 **마스터 파일 하나로만** 이어집니다: `dataset/tools`가 마스터를 만들고 `train/scripts/prepare_data.py`가 읽습니다.
-`train/data/`(학습용 파일), `train/runs/`, `work/`는 Git에 넣지 않습니다(S3가 원본).
+데이터 구축과 학습은 **마스터 파일 하나로만** 이어집니다: 마스터를 만들고(지금까지는 서버 저장소, 앞으로는 `dataset/tools`) `train/scripts/prepare_data.py`가 읽습니다. A/B용 마스터는 `train/scripts/jf_to_master.py`가 `jf_samples/`에서 만듭니다.
+`train/data/`(학습용 파일), `train/runs/`, A/B 출력(`train/data_ab/`, `train/jf_*.jsonl.gz`), `work/`는 Git에 넣지 않습니다(S3가 원본).
 SageMaker 작업에는 `train/`만 올라가고, dirty 판정도 `train/`만 봅니다. `dataset/`을 고쳐도 학습 실행에는 영향이 없습니다.
 
 ## 지켜야 할 것

@@ -6,3 +6,6 @@ runs/
 *.egg-info/
 .venv/
 work/
+# A/B on outside data (train/README.md): converted masters and prepared data
+data_ab/
+jf_*.jsonl.gz

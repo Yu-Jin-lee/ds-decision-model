@@ -1,31 +1,70 @@
 # train - 결정모델 학습·평가
 
-결정모델(Kev, Clef-Flash, Laya 등)을 S2·S4·S5 × 한국어·일본어·영어로 파인튜닝하고 평가하는 코드입니다.
+결정모델(Kev, Laya, Chon)을 S2·S4·S5 × 한국어·일본어·영어로 파인튜닝하고 평가하는 코드입니다.
 **아래 명령은 모두 이 `train/` 폴더에서 실행합니다** (`cd train`). `data/`, `runs/`도 이 폴더 아래에 생깁니다.
 실험 설계는 [실험 설계서 - 결정모델 파인튜닝 (2026.11.16)](https://docs.google.com/document/d/1CQsWkZvSeysl-i-sbdY7u5qJDOJopjaNgnokIdAgZEc/edit)을 따릅니다.
 
 **무엇을 돌릴지는 `configs/`에, 어떻게 돌릴지는 코드에 둡니다.** 모델이나 실험군을 바꿀 때는 설정 파일만 고칩니다.
 
+## 모델
+
+결정모델 후보로 실험한 모델은 아래 4개입니다. `clef-flash`와 `kev-9b`는 설정과 코드만 있고 돌리지 않았습니다. `gemma-4-26b-a4b`는 후보가 아니라 비교 기준선입니다.
+
+| 모델 | 백엔드 | 실험 |
+|---|---|---|
+| `kev-4b` | kev | 사용 |
+| `laya-multilingual` | laya | 사용 |
+| `chon-1.0-e4b` | chon | 사용 |
+| `chon-1.0-e2b` | chon | 사용 (B0만) |
+| `clef-flash` | clef | **미사용**. 설정·백엔드 코드만 있음 |
+| `kev-9b` | kev | **미사용**. 설정만 있음 (`base_revision` 미정) |
+| `gemma-4-26b-a4b` | prompt_llm | **결정모델 후보 아님**. 운영 Gemma 기준선(P0-*). 평가·serving 실행 기록이 커밋에 있음 |
+
 ## 구조
 
 ```
 configs/
-  models/*.yaml     모델별 체크포인트·학습 레시피·인스턴스 (모델 추가 = 파일 하나 추가)
-  tasks.yaml        태스크별 최종 라벨, 질문 형식(수준), 질문 문구
-  groups.yaml       실험군(B0, S-*, J+R-*), seed, 1단계에서 고른 형식
+  models/*.yaml     모델별 체크포인트·학습 레시피·인스턴스·serving 설정 (모델 추가 = 파일 하나 추가)
+  tasks.yaml        태스크별 최종 라벨, 모델 입력(state) 조립 규칙, 질문 형식(수준), 질문 문구
+  groups.yaml       실험군과 seed (아래 표)
+  serving.yaml      속도 비교용 serving 프로필 (인스턴스, vLLM 버전)
+  prompts/          Gemma 기준선(P0-*)이 쓰는 운영 프롬프트
 src/decision_model/
+  config.py         설정 읽기, 실험군 → 실행 목록 확장
+  prepare.py        태스크 마스터 행 → 표준 레코드
+  data.py           칸별 데이터 읽기·쓰기, 데이터 파일 sha256
+  inputs.py         원본 입력 → 모델 입력(state) 조립 (SERP 형식 등)
   formats.py        질문 생성, 모델 답 → 최종 라벨 분포 변환 (모든 모델 공통)
-  backends/         모델 계열별 학습·추론 (kev.py, clef.py, laya.py)
+  backends/         모델 계열별 학습·추론 (kev.py, laya.py, chon.py / prompt_llm.py: Gemma 기준선 / 미사용: clef.py)
   calibration.py    temperature 하나를 calibration 파티션으로 맞춤
   metrics.py        정확도, Brier, ECE, 오류 5% 이내 자동 처리 비율, bootstrap
   evaluation.py     예측 → 칸별(태스크/언어/형식) 지표
+  latency.py        모든 모델 같은 조건(칸별 30건, 배치 1, 워밍업 10건)으로 추론 속도 측정
   pipeline.py       한 실행: 학습 → 보정 → development 평가 → 저장
 scripts/
   prepare_data.py   태스크 마스터 → data/{task}/{lang}/{partition}.jsonl
   run.py            실행 하나 (또는 --list로 실행 목록)
   launch_sagemaker.py  실행 목록을 SageMaker 학습 작업으로 제출
+  jf_to_master.py   jf_samples 태스크 CSV → 태스크 마스터 (A/B용)
+  ab_launch.py      끝난 실행을 바깥 데이터로 채점하는 SageMaker 작업 제출
+  ab_job.py         A/B 작업 안에서 예측·채점
+  reshard_safetensors.py  Gemma 체크포인트를 4GB 파일로 다시 나눔 (serving 전)
 sagemaker/entry.py  학습 작업 안에서 의존성 설치 후 run.py 실행
 ```
+
+### 실험군 (`configs/groups.yaml`)
+
+| 실험군 | 단계 | 내용 |
+|---|---|---|
+| `B0-{태스크}-{형식}` | 0 | 학습 없이 공개본 그대로, 태스크의 모든 질문 형식 |
+| `P0-s2`, `P0-s4`, `P0-s5` | 0 (선택) | Gemma 기준선: 운영 프롬프트로 생성한 답을 라벨로 변환 |
+| `S-s2-*`, `S-s4-*`, `S-s5-*` | 1 | 태스크 하나씩 질문 형식 비교 (s2·s5: choice/score/both, s4: noul/choice/both, `S-s4-score`는 선택) |
+| `L-{태스크}-{언어}` | 2 (선택) | 한 언어로만 학습(choice, replay 없음), 세 언어로 평가. seed 0만 |
+| `J-best` | 2 (선택) | 세 태스크를 한 모델로, 1단계에서 고른 형식(s2 choice, s4 both, s5 choice), replay 없음. seed 0만 |
+| `J+R-all`, `J+R-ko/ja/en`, `J` | 2 | 실험 설계서의 2단계(replay 2000, `J`는 replay 없음). `selected_levels`를 채워야 실행 목록이 만들어짐 |
+
+- 1단계에서 고른 형식은 `selected_levels`가 아니라 `J-best`에 직접 적혀 있습니다. `selected_levels`는 비어 있어서 `J+R-*`와 `J`는 지금 설정으로는 돌릴 수 없습니다.
+- 2단계는 Kev-4B와 Laya가 `L-*`와 `J-best`로 돌렸습니다(커밋 205b301 기록). Chon은 replay를 지원하지 않아 `J+R-*`를 돌릴 수 없습니다.
 
 ## 사용법
 
@@ -37,13 +76,13 @@ python scripts/prepare_data.py --task s5 --master s5_master.jsonl.gz --out data
 #    tasks.yaml의 state 규칙으로 조립함. SERP 형식 등을 바꿔도 데이터를 다시 올릴 필요 없음
 
 # 2. 실행 목록 확인 (1단계 27회)
-python scripts/run.py --model clef-flash --list --stage 1
+python scripts/run.py --model kev-4b --list --stage 1
 
 # 3. 실행 하나 (GPU 장비에서)
-python scripts/run.py --model clef-flash --group S-s4-noul --seed 0
+python scripts/run.py --model kev-4b --group S-s4-noul --seed 0
 
 # 4. SageMaker로 한꺼번에 제출 (끝난 실행은 건너뜀)
-python scripts/launch_sagemaker.py --model clef-flash --stage 1 \
+python scripts/launch_sagemaker.py --model kev-4b --stage 1 \
   --data s3://BUCKET/ds-jf-decision-model/data/ --output s3://BUCKET/ds-jf-decision-model/runs/ \
   --role <SageMaker 실행 역할 ARN> --image-uri <학습 이미지> --dry-run
 
@@ -96,15 +135,15 @@ python scripts/run.py --model kev-4b --group J-best --seed 0 --checkpoint <압�
 | 조건 | 모든 모델 공통 (`configs/serving.yaml`) |
 |---|---|
 | 인스턴스 | `ml.g6e.xlarge` (L40S 48GB 1장), 평가와 같은 인스턴스 |
-| 정밀도 | bf16 계산. Gemma만 bf16 가중치(~52GB)가 48GB에 안 들어가 가중치를 int8로 둠(weight-only, 계산은 bf16) |
+| 정밀도 | bf16 계산. Gemma(기준선)만 bf16 가중치(~52GB)가 48GB에 안 들어가 가중치를 int8로 둠(weight-only, 계산은 bf16) |
 | 측정 | 같은 레코드(칸별 30건), 배치 1, 순서대로. 워밍업은 측정 표본 밖의 레코드 10건 |
 
 | 모델 | 서빙 경로 (`configs/models/*.yaml`의 `serving`) |
 |---|---|
-| Gemma | vLLM, 평가와 같은 플래그 (int8 가중치, bf16 계산) |
 | Chon | `chon.serve --reader vllm` (어댑터 병합 후 vLLM으로 선택지 글자를 읽음, Gemma와 같은 vLLM 버전) |
 | Kev | `kev.serve` 기본 서빙 설정: bf16, CUDA graph, fused Qwen3.5 커널(`flash-linear-attention` 설치) |
 | Laya | bf16 autocast |
+| Gemma (기준선) | vLLM, 평가와 같은 플래그 (int8 가중치, bf16 계산) |
 
 ```bash
 # 끝난 실행(B0는 공개본, 학습한 실행은 --output의 체크포인트)을 serving 프로필로 다시 잼
@@ -139,24 +178,17 @@ python scripts/ab_launch.py --model chon-1.0-e4b --group J-best --seed 0 --task 
 ## 모델 추가하기
 
 1. `configs/models/<이름>.yaml`을 만듭니다. `backend`로 학습 방식을 고릅니다.
-2. 기존 backend(kev, clef, laya)로 안 되는 모델이면 `src/decision_model/backends/`에 `train()`과 `predict()`를 구현한 클래스를 추가하고 `backends/__init__.py`에 등록합니다.
+2. 기존 backend(kev, laya, chon, prompt_llm / 미사용: clef)로 안 되는 모델이면 `src/decision_model/backends/`에 `train()`과 `predict()`를 구현한 클래스를 추가하고 `backends/__init__.py`에 등록합니다.
 3. 데이터, 질문 형식, 보정, 지표는 그대로 재사용됩니다.
 
 ## 모델별 메모
-
-**Clef-Flash** (`backends/clef.py`)
-- Cloudflare는 추론 코드(`joint_schema_model.py`)만 공개했습니다. 이 코드로 입력을 만들고, 학습 루프는 여기서 작성했습니다.
-- 백본은 고정하고 언어 모델의 모든 선형 층에 LoRA를 붙입니다(비전 인코더 제외). joint head는 전부 학습합니다.
-- 공식 학습 레시피가 없어 `configs/models/clef-flash.yaml`의 값은 시작점입니다. 파일럿에서 development로 조정합니다.
-- Clef는 한 레코드의 질문을 한 시퀀스에서 함께 판단합니다. Kev는 질문끼리 서로 보지 못합니다. "동시" 수준을 해석할 때 이 차이를 감안합니다.
-- replay를 쓰는 실험군(J+R-*)은 Kev 형식의 범용 데이터 파일이 필요합니다. `data/replay.jsonl`에 두거나 `--replay-file`로 지정합니다.
 
 **Laya** (`backends/laya.py`)
 - Laya 패키지의 학습 함수(`laya.train.train_model`)를 그대로 호출합니다. 체크포인트는 다국어용 `convaiinnovations/laya-multilingual`입니다.
 - 기본값은 공식 레시피입니다: 인코더와 헤드 전체를 학습하고, 손실은 RLCD입니다.
 - `configs/models/laya-multilingual.yaml`에서 `freeze_encoder: true`(헤드만 학습), `loss: soft-ce`(cross-entropy만)로 바꿀 수 있습니다. LoRA는 지원하지 않습니다.
 - Laya 자체의 calibration 분할과 temperature는 쓰지 않고, 다른 모델과 같은 공통 보정을 씁니다.
-- 질문마다 별도 시퀀스로 판단합니다(Kev와 같고 Clef와 다름).
+- 질문마다 별도 시퀀스로 판단합니다(Kev와 같음).
 - 입력이 `max_len`을 넘거나 선택지가 헤드 예산(`head_max_len`)에 안 들어가는 질문은 학습에서 빠지고, 평가에서는 균등 확률로 처리되며 `predictions_*.jsonl`의 `skipped`에 기록됩니다.
 
 **Chon** (`backends/chon.py`, `chon-1.0-e4b`)
@@ -171,11 +203,28 @@ python scripts/ab_launch.py --model chon-1.0-e4b --group J-best --seed 0 --task 
 - 평가는 보정 전 확률(`KEV_TEMPERATURE=1.0`)과 fp32 경로로 받고, 보정은 공통 코드에서 합니다.
 - fp32 경로는 Kev의 서빙 기본값(bf16, CUDA graph, fused 커널)을 끄므로 속도 비교에는 쓰지 않습니다. 속도는 `--serving`으로 잽니다.
 
-## 아직 GPU에서 확인하지 않은 것
+**Clef-Flash** (`backends/clef.py`) — 미사용
+- Cloudflare는 추론 코드(`joint_schema_model.py`)만 공개했습니다. 이 코드로 입력을 만들고, 학습 루프는 여기서 작성했습니다.
+- 백본은 고정하고 언어 모델의 모든 선형 층에 LoRA를 붙입니다(비전 인코더 제외). joint head는 전부 학습합니다.
+- 공식 학습 레시피가 없어 `configs/models/clef-flash.yaml`의 값은 시작점입니다. 파일럿에서 development로 조정합니다.
+- Clef는 한 레코드의 질문을 한 시퀀스에서 함께 판단합니다. Kev는 질문끼리 서로 보지 못합니다. "동시" 수준을 해석할 때 이 차이를 감안합니다.
+- replay를 쓰는 실험군(J+R-*)은 Kev 형식의 범용 데이터 파일이 필요합니다. `data/replay.jsonl`에 두거나 `--replay-file`로 지정합니다.
 
-- Clef-Flash 학습은 CPU에서 가짜 모델로 흐름만 검증했습니다(`tests/test_clef_backend.py`). Laya는 laya 패키지 대신 가짜 함수로 선택지 순서와 변환만 검증했습니다(`tests/test_laya_backend.py`). 실제 모델로는 스모크 학습에서 메모리, 커널, bf16 autocast 동작을 확인해야 합니다.
-- Kev 학습 옵션은 실험 설계서의 명령을 따랐습니다. Kev 저장소 버전에 맞는지 스모크 학습에서 확인합니다.
-- serving 프로필(`--serving`)은 가짜 서버로 흐름만 검증했습니다. Kev 가상환경에 `flash-linear-attention==0.5.2`가 설치되고 L40S에서 fused 커널이 도는지, Chon의 vLLM 리더가 vLLM 0.34.0과 병합한 Gemma 4 E2B/E4B로 뜨는지는 첫 실행에서 확인해야 합니다.
+## 실제 GPU 실행 확인 현황
+
+커밋 기록으로 확인한 것과, 기록이 없어 아직 확인이 필요한 것입니다.
+
+| 항목 | 상태 | 근거 |
+|---|---|---|
+| Kev-4B 학습·평가 | 실행됨 | 학습 데이터가 384토큰 제한에 잘려 `max_state 2048`로 고침(e520e9a), J-best 학습 작업 후 보정 오류 수정(9c4a893) |
+| Laya 학습·평가 | 실행됨 | L-*, J-best 실행 설정을 groups.yaml에 옮김(205b301), Drive 실험 결과 문서(2026.11.18) |
+| Chon-1.0-E4B 학습 | 실행됨 | serving 작업이 학습한 실행을 차례로 재다 4번째에서 디스크가 참(88b7282) |
+| Chon serving (vLLM 리더) | 실행됨 | 같은 serving 작업 (88b7282) |
+| Gemma serving | 실패 후 수정, 재실행 기록 없음 | FlashInfer sampler 컴파일 중 엔진 중단 → `VLLM_USE_FLASHINFER_SAMPLER=0` (88b7282) |
+| Kev serving (bf16, CUDA graph, fused 커널) | 기록 없음 | `flash-linear-attention==0.5.2`가 L40S에서 도는지 확인 필요 |
+| Laya serving (bf16 autocast) | 기록 없음 | |
+| Clef-Flash | 돌리지 않음 | CPU 가짜 모델로 흐름만 검증(`tests/test_clef_backend.py`) |
+
 - `configs/tasks.yaml`의 질문 문구와 선택지 설명은 임시입니다. 운영에서 보낼 문구로 바꿔야 합니다.
 
 ## 테스트

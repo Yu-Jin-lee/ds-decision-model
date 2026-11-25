@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Submit SageMaker training jobs for the run matrix.
 
-    python scripts/launch_sagemaker.py --model clef-flash --stage 1 \
+    python scripts/launch_sagemaker.py --model kev-4b --stage 1 \
         --data s3://BUCKET/decision-model/data/ --output s3://BUCKET/decision-model/runs/ \
         --role arn:aws:iam::ACCOUNT:role/SageMakerExecutionRole --image-uri <ECR image>
 

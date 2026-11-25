@@ -18,7 +18,9 @@
 | 2026-11-10 | 데이터 | S4 표본은 S5 마스터 키워드·파티션을 그대로 쓰고, 정답은 S5 검수에서 고친 최종 구분 | [구축 방안 - S4](https://docs.google.com/document/d/16m2NJAPJelQtV4s6gA0YsqphzEy0kckqGBmSuEVPbwE/edit) |
 | 2026-11-12 | 기준 | S4는 target에 고유 이름이 하나라도 있으면 브랜드. 의도어는 보지 않음 | [criteria/s4.md](../dataset/criteria/s4.md) |
 | 2026-11-16 | 학습 | 실험 설계: B0(무학습) → 1단계 질문 형식 선택(S-*) → 2단계 태스크·언어 축(J+R-*) | [실험 설계서](https://docs.google.com/document/d/1CQsWkZvSeysl-i-sbdY7u5qJDOJopjaNgnokIdAgZEc/edit), [train/configs/groups.yaml](../train/configs/groups.yaml) |
+| 2026-11-21 | 학습 | 2단계는 `selected_levels`·J+R-* 대신 `L-*`(언어별 학습)와 `J-best`(1단계에서 고른 형식 s2 choice·s4 both·s5 choice를 직접 적음, replay 없음)로 진행. Kev-4B·Laya가 이 실험군으로 실행 | 커밋 205b301, [train/configs/groups.yaml](../train/configs/groups.yaml) |
 | 2026-11-25 | 운영 | 기준서 원본을 저장소 `dataset/criteria/`로 옮김. Google Docs는 공유용 사본 | 이 저장소 |
 | 2026-11-25 | 운영 | 라벨은 Git(`dataset/labels/`), 입력·SERP는 S3에 두고 manifest에 경로·sha256 기록 | 이 저장소 |
 | 2026-11-25 | 운영 | 학습데이터 구축(기준서·라벨·도구·회차 기록)은 `dataset/` 아래로 묶음 | 이 저장소 |
 | 2026-11-25 | 운영 | 학습·평가 코드를 `train/` 아래로 옮김. SageMaker는 `train/`만 올리고, dirty 판정도 `train/`만 봄 | [PR #9](https://github.com/Yu-Jin-lee/ds-decision-model/pull/9) |
+| 2026-11-25 | 학습 | 결정모델 후보는 kev-4b·laya-multilingual·chon-1.0-e4b·chon-1.0-e2b 4개. clef-flash·kev-9b는 코드는 두고 미사용으로 표시, gemma-4-26b-a4b는 기준선 | [train/README.md](../train/README.md) |
