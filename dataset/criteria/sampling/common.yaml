@@ -1,0 +1,49 @@
+# 표본 기준 - 모든 태스크 공통
+# 출처: 학습데이터·골든셋 구축 방안 - 공통 (2026.11.03)
+#   https://docs.google.com/document/d/1kdauKD-YYUhlCytE3v87ObDVecs9ihWjf5NlKrfmUzI/edit
+# 데이터 도구(dataset/tools/)가 읽는 값입니다. 바꾸면 docs/decisions.md에 남깁니다.
+
+langs: [ko, ja, en]
+
+# 칸 = 태스크 × 언어. 칸마다 파티션별 건수 (합 1,680)
+partition_sizes:
+  train: 1000
+  calibration: 214
+  development: 214
+  test: 252
+
+# 산업군 단위 분할 (2026-11-04 확정, 모든 칸에 고정). 이름은 kr 기준
+partitions:
+  test:
+    - {kr: 뷰티/화장품, jp: ビューティー／化粧品, us: Beauty/Cosmetics}
+    - {kr: 패션잡화/액세서리, jp: ファッション小物／アクセサリー, us: Fashion Accessories}
+    - {kr: 여행, jp: 旅行, us: Travel}
+    - {kr: 식품, jp: 食品, us: Food}
+    - {kr: 반려동물식품, jp: ペットフード, us: Pet Food}
+    - {kr: 구독 서비스, jp: サブスクリプションサービス, us: Subscription Services}
+  development:
+    - {kr: 주류, jp: 酒類, us: Alcoholic Beverages}
+    - {kr: 헬스케어 서비스, jp: ヘルスケアサービス, us: Healthcare Services}
+    - {kr: 뷰티 서비스, jp: ビューティーサービス, us: Beauty Services}
+    - {kr: 출산/유아동, jp: 出産／ベビー・子供用品, us: Maternity/Baby}
+    - {kr: 의류, jp: 衣類, us: Apparel}
+  calibration: train 산업군 안에서 카테고리 단위로 떼어 냄
+  train: 나머지 산업군
+
+# 여러 산업군에 걸친 키워드의 배정 순서
+partition_priority: [test, development, calibration, train]
+
+# test·development 후보에서 뺀 산업군
+excluded_from_eval: [자동차, 은행, 컴퓨터, 통신 서비스]   # 한 국가 10% 초과 / 카테고리 하나뿐
+
+# 사례 구성
+case_mix:
+  representative: 0.85    # 대표
+  hard: 0.15              # 어려운
+# dev·test에만 Gemma 오답(실패 사례)을 넣어 Gemma 일치율을 이 값 근처로 맞춤.
+# 설계값이므로 Gemma 실제 성능으로 인용하지 않음.
+eval_gemma_agreement_target: 0.85
+failure_max_share_per_kind: 0.5   # 한 오답 종류가 칸 오답의 절반을 넘지 않음
+
+# 최종 라벨 규칙: 사람 라벨 > 모델 라벨 일치 값
+final_label_priority: [human, agree]

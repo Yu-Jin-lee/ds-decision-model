@@ -1,0 +1,24 @@
+# S5 CDJ 단계
+status: master_fixed            # criteria → sampled → model_labeled → human_review → master_fixed
+master_version: 2026-11-06
+records: 5040                   # 언어별 1,680
+final_source_counts:            # 구축 절차 - S5 (2026.11.06)
+  agree: 4146
+  bulk_by_criteria: 447
+  dashboard_human: 393
+  claude_by_criteria: 47
+  retag_page_human: 7
+
+# 아직 저장소로 가져오지 않음. 서버 저장소 ds-journey-finder-async 기준 위치
+source:
+  repo: ds-journey-finder-async
+  master: cdj_dataset/s5_master/s5_master.jsonl.gz
+  build_script: cdj_dataset/s5_master/build_master.py
+  samples: cdj_dataset/tasks/s5_v2/
+  commit: null                  # TODO 가져올 때 채움
+
+inputs:                         # TODO S3에 올린 뒤 채움
+  uri: null
+  sha256: null
+
+labels: null                    # TODO dataset/labels/s5/labels.jsonl

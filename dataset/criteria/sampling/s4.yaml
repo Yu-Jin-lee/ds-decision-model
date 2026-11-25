@@ -1,0 +1,29 @@
+# 표본 기준 - S4 브랜드/논브랜드
+# 출처: 학습데이터·골든셋 구축 방안 - S4 브랜드/논브랜드 (2026.11.10)
+#   https://docs.google.com/document/d/16m2NJAPJelQtV4s6gA0YsqphzEy0kckqGBmSuEVPbwE/edit
+# 공통 값은 common.yaml. 라벨 기준은 ../s4.md
+
+source: s5_master                  # S5 마스터 키워드와 파티션을 그대로 씀
+gold_label: S5 검수에서 고친 최종 구분 (kind)
+prerequisites:
+  - S3 추출(target·intent·site)이 정확한 키워드만 (S5 마스터에서 이미 적용)
+  - target이 없는 키워드는 자동 논브랜드라 학습 제외
+
+labels: [brand, nonbrand]
+brand_ratio: {target: 0.5, tolerance: 0.1}
+
+hard_case_types:
+  - 시험·자격·제도 (토익, 사회복지사 2급, NISA) → 논브랜드
+  - 일반명처럼 쓰이는 상표 (Chromebook, Tater Tots) → 브랜드
+  - 일반어와 같은 이름 (스피크 - 어학 앱, duo) → 브랜드
+  - 약칭·별칭·오기 (올영, zell, rollie)
+  - 아티스트·사람 이름 (블랙핑크 - 엔터테인먼트사, 유튜버 이름)
+  - 작은 브랜드·낯선 카테고리 (잘때꼭바르는크림, Joint Food) → 브랜드
+
+# dev·test 실패 사례 (Gemma 일치율 약 85%로 맞춤)
+failure_cases:
+  definition: 브랜드·논브랜드 구분이 틀린 경우
+  candidates: 11/6 배치 S4 캐시에서 다수결 전 Gemma 답과 다수결 후 답이 다른 행
+  judged_by: SERP·웹 검색으로 판정 후 사람이 검토
+  exclude: [인물·기관·시설·방송, 오타·은어, 지명과 겹치는 이름, Botox, target 밖 브랜드]
+  swap: 같은 정답 구분의 Gemma 정답 행과 바꿔 브랜드 비율 유지. 같은 브랜드는 언어별 dev·test에 1회

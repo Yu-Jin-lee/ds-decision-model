@@ -1,0 +1,18 @@
+# S2 Span 유무관 유형
+status: human_review            # criteria → sampled → model_labeled → human_review → master_fixed
+# 구축 방안 - S2 (2026.11.09) 기준. 이후 진행(라벨 2 사례 정리 2026-11-17 등)은 확인 필요
+remaining:
+  - Gemma·Claude 불일치·보류 건 사람 검수
+  - s2_master 고정
+
+source:
+  repo: ds-journey-finder-async
+  samples: cdj_dataset/tasks/s2_v2/
+  master: null                  # TODO
+  commit: null
+
+inputs:
+  uri: null
+  sha256: null
+
+labels: null
