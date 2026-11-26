@@ -87,6 +87,7 @@ def run_queue(args: argparse.Namespace) -> None:
 
     from decision_model.config import CONFIG_DIR, load_yaml
 
+    os.environ.setdefault("AWS_DEFAULT_REGION", args.region)
     instance_type = load_yaml(CONFIG_DIR / "serving.yaml")["instance"]
     sagemaker = boto3.client("sagemaker", region_name=args.region)
     pending = parse_items(args.items)
@@ -112,7 +113,8 @@ def run_queue(args: argparse.Namespace) -> None:
                     label = f"{model}:{'+'.join(groups)}"
                     out = subprocess.run(launch_command(model, groups, args, spot=slot == "spot"), cwd=REPO,
                                          capture_output=True, text=True,
-                                         env={**os.environ, "SAGEMAKER_SUPPRESS_V2_WARNING": "1"})
+                                         env={**os.environ, "SAGEMAKER_SUPPRESS_V2_WARNING": "1",
+                                              "AWS_DEFAULT_REGION": args.region})   # none set in a job
                     job = submitted_job(out.stdout + out.stderr)
                     if job == "DONE":
                         log(f"{label}: every run already has results; skipped")
@@ -124,8 +126,8 @@ def run_queue(args: argparse.Namespace) -> None:
                         busy[slot] += 1
                         pending.pop(0)
                     else:
-                        tail = (out.stdout + out.stderr).strip().splitlines()[-1:] or [f"exit {out.returncode}"]
-                        log(f"{label}: not submitted on {slot} yet: {tail[0][:300]}")
+                        tail = (out.stdout + out.stderr).strip().splitlines()[-4:] or [f"exit {out.returncode}"]
+                        log(f"{label}: not submitted on {slot} yet: {' | '.join(tail)[:800]}")
         except Exception as error:  # noqa: BLE001 - throttling or a lapsed session: try again next round
             log(f"error: {type(error).__name__}: {error}")
         time.sleep(args.poll_seconds)
