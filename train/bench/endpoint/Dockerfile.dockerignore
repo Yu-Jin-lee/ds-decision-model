@@ -1,0 +1,11 @@
+# Context is train/: send only the code and configs, never data, runs or local environments.
+data/
+data_ab/
+runs/
+work/
+.venv/
+**/__pycache__/
+**/*.pyc
+.pytest_cache/
+*.egg-info/
+jf_*.jsonl.gz

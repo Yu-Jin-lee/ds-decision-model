@@ -28,6 +28,7 @@ configs/
   tasks.yaml        태스크별 최종 라벨, 모델 입력(state) 조립 규칙, 질문 형식(수준), 질문 문구
   groups.yaml       실험군과 seed (아래 표)
   serving.yaml      속도 비교용 serving 프로필 (인스턴스, vLLM 버전)
+  bench.yaml        엔드포인트 부하 테스트 조건 (동시 사용자 단계, 단계별 요청 수, p95 목표)
   prompts/          Gemma 기준선(P0-*)이 쓰는 운영 프롬프트
 src/decision_model/
   config.py         설정 읽기, 실험군 → 실행 목록 확장
@@ -41,6 +42,9 @@ src/decision_model/
   evaluation.py     예측 → 칸별(태스크/언어/형식) 지표
   latency.py        모든 모델 같은 조건(칸별 30건, 배치 1, 워밍업 10건)으로 추론 속도 측정
   pipeline.py       한 실행: 학습 → 보정 → development 평가 → 저장
+  endpoint.py       모든 모델 공통 HTTP 엔드포인트 (/predict), 프로세스 안 모델의 요청 묶음 처리
+  bench.py          부하 테스트: 단계별 레코드 배정, 처리량·지연 계산, 결과 저장
+  load_test.py      Locust 클라이언트와 단계 하나 실행
 scripts/
   prepare_data.py   태스크 마스터 → data/{task}/{lang}/{partition}.jsonl
   run.py            실행 하나 (또는 --list로 실행 목록)
@@ -49,7 +53,20 @@ scripts/
   ab_launch.py      끝난 실행을 바깥 데이터로 채점하는 SageMaker 작업 제출
   ab_job.py         A/B 작업 안에서 예측·채점
   reshard_safetensors.py  Gemma 체크포인트를 4GB 파일로 다시 나눔 (serving 전)
-sagemaker/entry.py  학습 작업 안에서 의존성 설치 후 run.py 실행
+sagemaker/entry.py  학습 작업 안에서 의존성 설치 후 run.py (부하 테스트 작업은 bench/job/run.py) 실행
+bench/              엔드포인트 부하 테스트 (아래 "엔드포인트 부하 테스트")
+  serve_endpoint.py 모델 하나를 HTTP 엔드포인트로 띄움 (serving 프로필). 두 방식 공통
+  compare.py        결과 비교: Gemma 대비 배수, 표, 그래프 (두 방식 함께)
+  locustfile.py     Locust 웹 UI로 손으로 확인할 때
+  job/              방식 A: SageMaker 학습 작업 안에서 localhost로 측정
+    launch.py         작업 제출
+    run.py            엔드포인트를 띄우고 Locust로 측정 (작업 안에서, 또는 GPU 장비에서 직접)
+  endpoint/         방식 B: SageMaker 실시간 엔드포인트를 밖에서 호출해 측정
+    Dockerfile        모델별 엔드포인트 이미지 (설치는 entry.py와 같음)
+    build_image.sh    이미지 빌드 후 ECR에 올림
+    serve.py          이미지의 시작점: 가중치 받고 8080 포트로 서빙
+    deploy.py         엔드포인트 생성·삭제·목록
+    run.py            배포 → Locust(InvokeEndpoint) 측정 → 삭제
 ```
 
 ### 실험군 (`configs/groups.yaml`)
@@ -155,6 +172,89 @@ python scripts/launch_sagemaker.py --model kev-4b --group B0-s5-choice --group S
 `summary.json`의 `latency_development`가 속도이고, `metrics_development`는 serving 경로의 정확도입니다(평가 경로와 답이 같은지 확인용).
 Chon의 vLLM이나 Kev의 fused 커널이 뜨지 않으면 조용히 느린 경로로 재지 않고 실행이 실패합니다.
 serving 배치는 학습한 실행이 끝날 때마다 받은 체크포인트와 Chon이 병합한 모델을 지웁니다(병합본은 어댑터마다 전체 모델 하나라 쌓이면 디스크가 찹니다).
+
+### 엔드포인트 부하 테스트: 처리량과 지연 (Locust)
+
+위 serving 측정은 배치 1로 한 건씩 순서대로 잽니다. 이 테스트는 모델을 **HTTP 엔드포인트로 띄우고 동시 사용자 수를 늘려 가며** 초당 처리 건수(처리량)와 지연을 잽니다. 결정모델이 운영 Gemma(P0-*)보다 처리량이 얼마나 높은지 보는 것이 목적입니다.
+코드는 `bench/`에 있고, 서빙 위치가 다른 두 방식으로 나뉩니다. 조건·지표·결과 형식은 같습니다.
+
+| | 방식 A `job` (`bench/job/`) | 방식 B `endpoint` (`bench/endpoint/`) |
+|---|---|---|
+| 모델이 뜨는 곳 | SageMaker 학습 작업 안 | SageMaker 실시간 엔드포인트 |
+| Locust가 도는 곳 | 같은 장비, localhost | 다른 장비 (서울 리전 EC2 권장) |
+| 호출 | HTTP `POST /predict` | `InvokeEndpoint` (SigV4) |
+| 재는 것 | 모델 서빙 자체의 처리량 | 운영과 같은 경로 (SageMaker 라우팅, 네트워크 포함) |
+| 준비 | 없음 (학습 이미지 그대로) | 모델별 이미지 빌드·ECR 업로드 |
+| 정리 | 작업이 끝나면 인스턴스 반납 | `run.py`가 측정 후 엔드포인트 삭제 (실패해도 삭제) |
+
+공통 조건 (`configs/bench.yaml`, 두 방식 모두 `ml.g6e.xlarge` 한 대에 serving 프로필):
+
+| 조건 | 내용 |
+|---|---|
+| 엔드포인트 | 레코드 1건 → 예측 (`bench/serve_endpoint.py`). 예측은 각 모델의 `predictor`(평가·latency와 같은 함수) |
+| 동시 요청 처리 | Kev·Chon·Gemma: 각자의 서버(kev.serve, chon.serve, vLLM)에 그대로 넘김. Laya: 엔드포인트가 대기 중인 요청을 최대 16건씩 묶어 한 번에 계산(`serving.endpoint`) |
+| 부하 | 닫힌 루프: 사용자마다 답을 받으면 바로 다음 레코드를 보냄. 사용자 수 1, 2, 4, 8, 16, 32, 64 단계 |
+| 레코드 | train·calibration·development에서 id 해시 순서로, 단계마다 다른 레코드를 보냄(vLLM이 같은 프롬프트를 캐시에서 답하지 않게). **test는 쓰지 않음**. 라벨은 보내지 않음 |
+| 단위 | 레코드 1건(질문 전부)을 보내고 답을 받을 때까지, 클라이언트 시계 |
+| 계산 | 단계마다 처음과 마지막 `users`건(올라가는 구간, 빠지는 구간)을 빼고 계산. 처리량 = 남은 답의 도착 속도(records/s) |
+
+**방식 A: 학습 작업**
+
+```bash
+python bench/job/launch.py --model gemma-4-26b-a4b --group P0-s5 --seed 0 \
+  --data s3://BUCKET/ds-jf-decision-model/data/ --output s3://BUCKET/ds-jf-decision-model/runs/ --role ... --image-uri ...
+python bench/job/launch.py --model kev-4b --group B0-s5-choice --group S-s5-choice --seed 0 --batch ...
+
+# GPU 장비에서 직접 (엔드포인트를 스스로 띄움. 이미 떠 있으면 --url)
+pip install -r requirements-bench.txt
+python bench/job/run.py --model laya-multilingual --group S-s5-choice --seed 0 --checkpoint <체크포인트>
+```
+
+옵션은 `scripts/launch_sagemaker.py`와 같습니다(`--serving` 제외). 결과는 `{output}/bench/job/{run_id}/`에 올라가고, 이미 있는 결과는 건너뜁니다.
+
+**방식 B: 실시간 엔드포인트** (x86 Linux 장비에서 실행. 서울 리전 EC2 권장)
+
+```bash
+# 1. 모델별 이미지 (처음 한 번, 코드가 바뀌면 다시). ECR 저장소는 처음에 한 번 만듦
+aws ecr create-repository --region ap-northeast-2 --repository-name ds-jf-decision-model-bench
+IMAGE=$(bench/endpoint/build_image.sh kev-4b)
+
+# 2. 배포 → 측정 → 삭제 (학습한 실행은 --output에서 체크포인트를 받음)
+pip install -r requirements-bench.txt boto3
+python bench/endpoint/run.py --model kev-4b --group B0-s5-choice --seed 0 --image-uri "$IMAGE" \
+  --role arn:aws:iam::211132580794:role/custom-sagemaker --output s3://BUCKET/ds-jf-decision-model/runs/ --upload
+
+# 남은 엔드포인트 확인·삭제 (떠 있는 동안 계속 비용이 나감)
+python bench/endpoint/deploy.py list
+python bench/endpoint/deploy.py down --name <엔드포인트 이름>
+```
+
+- 레코드는 로컬 `data/`에서 만듭니다(`--data-root`). 결과는 `runs/bench/endpoint/{run_id}/`, `--upload`를 주면 S3에도 올립니다.
+- 컨테이너는 시작할 때 가중치를 받습니다(Gemma는 ~52GB를 받고 다시 나눔). `/ping`이 답할 때까지 최대 60분 기다립니다(`endpoint.startup_timeout_s`).
+- 첫 배포에서 확인할 것: 컨테이너 디스크에 Gemma 가중치가 들어가는지(`VLLM_MODELS_DIR`, 기본 `/opt/ml/models`), 엔드포인트가 Hugging Face에 접근할 수 있는지.
+
+**비교와 결과**
+
+```bash
+aws s3 sync s3://BUCKET/ds-jf-decision-model/runs/bench/ runs/bench/
+python bench/compare.py runs/bench --out runs/bench/_compare   # 두 방식 함께. 그래프는 matplotlib 필요
+
+# 손으로 확인 (Locust 웹 UI, 일반 HTTP라 serve_endpoint.py에만): 레코드는 반복해서 보냄
+locust -f bench/locustfile.py --host http://127.0.0.1:8080 --records runs/kev-4b/B0-s5-choice/s0/model_inputs_development.jsonl.gz
+```
+
+| 결과 (`runs/bench/{job\|endpoint}/{모델}/{실험군}/s{seed}/`) | 내용 |
+|---|---|
+| `summary.json` | 방식, 조건, 엔드포인트 정보(정밀도, 처리 방식, GPU), 단계별 지표, `best`(최대 처리량 단계, p95 목표 안 최대 처리량, 1명일 때 지연). 방식 B는 `deployment`(엔드포인트 이름, 이미지, 배포 시간, 삭제 여부)도 남김 |
+| `steps.csv` | 단계마다 한 줄: users, records/s, questions/s, p50·p90·p95·p99, 실패 수, 평균 묶음 크기, 클라이언트 CPU |
+| `requests.jsonl.gz` | 요청마다 한 줄: 시작·끝 시각, 지연, 서버 처리 시간, 묶음 크기, 성공 여부 |
+| `_compare/` (`bench/compare.py`) | `comparison.md`·`comparison.csv`(방식·모델별 요약, 방식과 태스크가 같은 Gemma 대비 배수), `steps_all.csv`(전체 단계, 그래프용), PNG 그래프 3개 |
+
+- 비교 기준은 **최대 처리량**(records/s)과 **p95 목표 안 처리량**입니다. p95 목표(`slo_p95_ms`)는 임시값 1000 ms이고, 서비스 목표가 정해지면 바꿉니다.
+- 처리량은 레코드(키워드 판정 1건) 기준입니다. `both` 형식은 레코드당 질문이 2개라 questions/s도 같이 봅니다.
+- 방식 A에서는 Locust가 엔드포인트와 같은 장비(vCPU 4개)에서 돕니다. 단계마다 `client_cpu`(Locust 프로세스의 CPU 사용률, 1.0 = 코어 하나)를 남기니, 1.0 가까이 오르면 측정 쪽이 병목입니다.
+- 방식 B는 재시도 없이 호출하므로, SageMaker의 제한(throttling)이나 오류도 실패로 셉니다.
+- 실패한 요청이 있는 단계는 `best`에서 빠집니다. 한 단계가 `max_step_seconds`를 넘으면 거기서 멈춥니다.
 
 ### A/B: 실제 데이터에서 기존 결과와 비교
 

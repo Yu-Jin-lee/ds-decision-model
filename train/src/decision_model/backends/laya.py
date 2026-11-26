@@ -148,6 +148,12 @@ class LayaBackend(Backend):
         # One record per call; all of its questions go through in one forward pass.
         yield lambda record: self._predict_loaded(loaded, [record], max(1, len(record["questions"])))[0]
 
+    @contextmanager
+    def batch_predictor(self, checkpoint: Path | None) -> Iterator[Callable[[list[dict[str, Any]]], list[Prediction]]]:
+        loaded = self._load(checkpoint)
+        # Several records per call; all of their questions go through in one forward pass.
+        yield lambda records: self._predict_loaded(loaded, records, max(1, sum(len(r["questions"]) for r in records)))
+
     def _predict_loaded(self, loaded: tuple[Any, Any, Any, Any], records: list[dict[str, Any]], batch_size: int) -> list[Prediction]:
         import torch
 

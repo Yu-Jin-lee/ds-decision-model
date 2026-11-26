@@ -110,6 +110,8 @@ def clean_vllm_bin(venv: Path | None = None, directory: Path | None = None) -> P
 
 
 class ChonBackend(Backend):
+    concurrent_predictor = True   # predictor forwards to chon.serve, which handles concurrent requests itself
+
     def train(self, records, out_dir: Path, seed: int, replay: int = 0, replay_records=None) -> Path:
         """Continue training the released adapter; returns a release-style package (see the module docstring)."""
         if replay:

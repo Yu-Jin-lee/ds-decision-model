@@ -26,3 +26,7 @@ instance: ml.g6e.xlarge
 # Serving profile (scripts/run.py --serving, configs/serving.yaml): bf16 autocast instead of fp32.
 serving:
   autocast: bf16
+  # Endpoint (bench/serve_endpoint.py, configs/bench.yaml): Laya runs in the endpoint's own process, so the
+  # endpoint batches the requests waiting in its queue, up to max_batch records per forward pass (vLLM batches
+  # Chon and Gemma the same way inside its server). max_wait_ms 0: never wait for more requests to arrive.
+  endpoint: {max_batch: 16, max_wait_ms: 0}

@@ -98,6 +98,7 @@ def one_hot_log_probs(label: str, labels: list[str]) -> dict[str, float]:
 
 
 class PromptLLMBackend(Backend):
+    concurrent_predictor = True   # predictor forwards to vLLM, which handles concurrent requests itself
     generative = True   # parsed text answers: no calibration, no probability metrics
 
     def __init__(self, model_config: dict[str, Any], venv: Path | None = None, repo_root: Path = REPO_ROOT):
