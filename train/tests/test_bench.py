@@ -503,3 +503,12 @@ def test_ratios_compare_within_one_round():
         {**_summary("kev-4b", "B0-s5-choice", ["s5"], [_step(1, 8.0, 50, 60)]), "label": "r2"})]
     compare.add_baseline(rows, "gemma-4-26b-a4b")
     assert rows[2]["throughput_x_baseline"] == 2.0
+
+
+def test_the_endpoint_sends_answers_without_waiting_for_a_delayed_ack():
+    # Without TCP_NODELAY every answer waited ~40 ms on Linux (headers and body are two writes).
+    server = make_server(Endpoint("serial", predict_one=lambda r: r, info={}), port=0)
+    try:
+        assert server.RequestHandlerClass.disable_nagle_algorithm is True
+    finally:
+        server.server_close()

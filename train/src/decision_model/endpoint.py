@@ -163,6 +163,10 @@ def make_server(endpoint: Endpoint, host: str = "127.0.0.1", port: int = 8080) -
 
     class Handler(BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
+        # TCP_NODELAY: the headers and the body go out in two writes, and with Nagle's algorithm the body waits for
+        # the client's delayed ACK of the headers, about 40 ms on Linux, on every answer (measured: 48 vs 7 ms for
+        # a 5 ms model). The 2026-11-26 round-1 load test carried that delay.
+        disable_nagle_algorithm = True
 
         def log_message(self, format: str, *args: Any) -> None:  # noqa: A002 - quiet under load
             pass
