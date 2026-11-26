@@ -17,6 +17,9 @@ own fastest engine. Results go to serving/{run_id}/ and are skipped the same way
 
     python scripts/launch_sagemaker.py --model kev-4b --group B0-s5-choice --group S-s5-choice \
         --seed 0 --batch --serving --data ... --output ... --role ... --image-uri ...
+
+bench/job/launch.py submits load-test jobs through this launcher (main(..., bench=True)): the runs are
+served as an HTTP endpoint with the serving profile and load-tested with Locust into bench/job/{run_id}/.
 """
 
 from __future__ import annotations
@@ -94,9 +97,13 @@ def batch_job_name(model: str, runs, job_kind: str = "batch") -> str:
 
 
 def git_state() -> tuple[str, str]:
-    """Commit and dirty flag of the local checkout, recorded in each run's summary."""
+    """Commit and dirty flag of the local checkout, recorded in each run's summary. Inside a job (no git
+    checkout, e.g. bench/job/queue_jobs.py --remote) the commit the outer launcher recorded is passed on."""
+    import os
     import subprocess
 
+    if os.environ.get("DECISION_MODEL_GIT_COMMIT"):
+        return os.environ["DECISION_MODEL_GIT_COMMIT"], os.environ.get("DECISION_MODEL_GIT_DIRTY", "1")
     try:
         commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=REPO, text=True).strip()
         dirty = subprocess.check_output(["git", "status", "--porcelain", "--", "."], cwd=REPO, text=True).strip()
@@ -105,8 +112,11 @@ def git_state() -> tuple[str, str]:
     return commit, "1" if dirty else "0"
 
 
-def output_id(run_id: str, serving: bool) -> str:
-    """Where a run's results go under --output: the run itself, or its serving re-timing (pipeline.SERVING_DIR)."""
+def output_id(run_id: str, serving: bool, bench: bool = False, label: str | None = None) -> str:
+    """Where a run's results go under --output: the run itself, its serving re-timing (pipeline.SERVING_DIR),
+    or its load test in a job (bench.BENCH_DIR, method job; a ``label`` such as a measurement round one folder deeper)."""
+    if bench:
+        return f"bench/job/{run_id}" + (f"/{label}" if label else "")
     return f"serving/{run_id}" if serving else run_id
 
 
@@ -127,8 +137,10 @@ def already_done(s3_output: str, run_id: str) -> bool:
     return response.get("KeyCount", 0) > 0
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+def main(argv: list[str] | None = None, bench: bool = False, description: str | None = None) -> None:
+    """``bench``: submit load-test jobs (bench/job/launch.py) instead of runs."""
+    parser = argparse.ArgumentParser(description=description or __doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--model", required=True)
     parser.add_argument("--stage", type=int, action="append")
     parser.add_argument(
@@ -150,12 +162,22 @@ def main() -> None:
         "--resume-from", default=None,
         help="S3 URI of an earlier job's model.tar.gz: runs whose checkpoint it holds skip training",
     )
-    parser.add_argument(
-        "--serving", action="store_true",
-        help="re-time finished runs with the serving profile (configs/serving.yaml) into serving/{run_id}/",
-    )
+    if not bench:
+        parser.add_argument(
+            "--serving", action="store_true",
+            help="re-time finished runs with the serving profile (configs/serving.yaml) into serving/{run_id}/",
+        )
+    else:
+        parser.add_argument("--label", default=None,
+                            help="measurement round, e.g. r2: results go to bench/job/{run_id}/{label}/")
     parser.add_argument("--dry-run", action="store_true")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
+    args.bench = bench
+    args.serving = getattr(args, "serving", False)
+    args.label = getattr(args, "label", None)
+    if args.label and not re.fullmatch(r"[A-Za-z0-9_-]{1,32}", args.label):
+        sys.exit("--label: letters, digits, _ and - only (at most 32)")
+    serving_like = args.serving or args.bench   # both serve with the serving profile on its one instance
 
     model_config = load_model_config(args.model)
     groups_config = load_yaml(CONFIG_DIR / "groups.yaml")
@@ -175,11 +197,11 @@ def main() -> None:
         runs = [run for run in runs if run.seed in set(args.seed)]
     if not runs:
         sys.exit("no runs match the given --stage/--group/--seed")
-    if args.serving and args.resume_from:
-        sys.exit("--resume-from does not apply to --serving (checkpoints are read from --output)")
-    if args.serving and not model_config.get("serving"):
+    if serving_like and args.resume_from:
+        sys.exit("--resume-from does not apply to --serving/--bench (checkpoints are read from --output)")
+    if serving_like and not model_config.get("serving"):
         sys.exit(f"{args.model} has no serving profile (key `serving` in its model config)")
-    serving_config = load_yaml(CONFIG_DIR / "serving.yaml") if args.serving else None
+    serving_config = load_yaml(CONFIG_DIR / "serving.yaml") if serving_like else None
     instance_type, volume_gb = job_settings(model_config, serving_config, args.instance_type)
     if serving_config and args.instance_type and args.instance_type != serving_config["instance"]:
         print(f"warning: --instance-type {args.instance_type} differs from configs/serving.yaml "
@@ -203,6 +225,8 @@ def main() -> None:
             hyperparameters = {**hyperparameters, "resume-from": args.resume_from}
         if args.serving:
             hyperparameters = {**hyperparameters, "serving": "1"}
+        if args.bench:
+            hyperparameters = {**hyperparameters, "bench": "1", **({"bench-label": args.label} if args.label else {})}
         max_run = args.max_run_hours * 3600
         estimator = Estimator(
             image_uri=args.image_uri,
@@ -232,10 +256,10 @@ def main() -> None:
 
     pending = []
     for run in runs:
-        if not args.dry_run and already_done(args.output, output_id(run.run_id, args.serving)):
-            print(f"skip   {output_id(run.run_id, args.serving)} (summary.json exists)")
+        if not args.dry_run and already_done(args.output, output_id(run.run_id, args.serving, args.bench, args.label)):
+            print(f"skip   {output_id(run.run_id, args.serving, args.bench, args.label)} (summary.json exists)")
             continue
-        if args.serving and run.train and not args.dry_run and not already_done(args.output, run.run_id):
+        if serving_like and run.train and not args.dry_run and not already_done(args.output, run.run_id):
             print(f"skip   {run.run_id} (not finished yet: a serving run needs its checkpoint)")
             continue
         pending.append(run)
@@ -243,7 +267,7 @@ def main() -> None:
     if args.batch:
         if not pending:
             sys.exit("nothing to run: every selected run already has summary.json")
-        name = batch_job_name(args.model, pending, "serve" if args.serving else "batch")
+        name = batch_job_name(args.model, pending, "bench" if args.bench else "serve" if args.serving else "batch")
         spec = ",".join(f"{run.group}:{run.seed}" for run in pending)
         tag_list.append({"Key": "runs", "Value": spec.replace(",", " ")[:256]})
         for run in pending:
@@ -256,7 +280,7 @@ def main() -> None:
         return
 
     for run in pending:
-        name = job_name(run.model, ("serve-" if args.serving else "") + run.group, run.seed)
+        name = job_name(run.model, ("bench-" if args.bench else "serve-" if args.serving else "") + run.group, run.seed)
         if args.dry_run:
             print(f"submit {run.run_id} -> {name} on {instance_type} commit={commit[:7]} tags={tags}")
             continue

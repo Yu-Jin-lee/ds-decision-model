@@ -1,0 +1,2 @@
+# Endpoint load test (train/bench/, configs/bench.yaml). bench/compare.py also needs matplotlib for its charts.
+locust==2.47.0

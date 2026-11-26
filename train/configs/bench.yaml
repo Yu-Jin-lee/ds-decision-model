@@ -1,0 +1,41 @@
+# Endpoint load test (train/bench/): latency and throughput of one model served as an HTTP endpoint, the
+# same way for every model, so decision models compare with the Gemma baseline. The model runs with the
+# serving profile on the serving instance (configs/serving.yaml) in both methods:
+#   job       a SageMaker training job serves it on localhost and runs Locust beside it (bench/job/)
+#   endpoint  a SageMaker real-time endpoint, called with InvokeEndpoint from another machine (bench/endpoint/)
+# Everything below except `endpoint` applies to both.
+#
+# Closed loop: `users` clients each send one record, wait for the answer, send the next (no think time).
+# One step per entry of `users`; each step sends its own records, so no record is timed twice.
+
+users: [1, 2, 4, 8, 16, 32, 64]
+
+# Records per step: at least `requests_per_step`, and at least `min_requests_per_user` x users so the
+# step reaches a steady state. The first and last `users` answers of a step (ramp up, drain) are left out
+# of the numbers; latency and throughput come from the answers in between.
+requests_per_step: 400
+min_requests_per_user: 8
+
+# Records sent before the first step and not counted (model warm-up, CUDA graphs, caches). They come from
+# the end of the record pool, so no timed record has been seen before.
+warmup: 20
+
+# Where records come from. Labels are never sent. The test partition is never used.
+# train is included only so there are enough distinct records (vLLM caches whole prompts: a repeated record
+# would be answered from cache).
+partitions: [train, calibration, development]
+
+# A step that takes longer than this is stopped (its numbers are kept and marked `timed_out`).
+max_step_seconds: 900
+
+# Latency target for "throughput within the target" (p95, one record end to end). A placeholder until the
+# team sets the service target.
+slo_p95_ms: 1000
+
+# Method `endpoint` only (bench/endpoint/).
+endpoint:
+  region: ap-northeast-2
+  ecr_repository: ds-jf-decision-model-bench   # one image per model, tagged {model}-{commit}
+  # The first start downloads the model (Gemma: ~52 GB, then resharded), so allow the longest start SageMaker
+  # takes (60 min) before /ping must answer.
+  startup_timeout_s: 3600

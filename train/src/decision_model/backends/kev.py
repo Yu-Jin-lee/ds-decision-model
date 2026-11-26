@@ -95,6 +95,8 @@ def answers_to_log_probs(answers: dict[str, Any]) -> dict[str, dict[str, float]]
 
 
 class KevBackend(Backend):
+    concurrent_predictor = True   # predictor forwards to kev.serve, which handles concurrent requests itself
+
     def __init__(self, model_config: dict[str, Any], kev_dir: Path | None = None):
         super().__init__(model_config)
         self.kev_dir = Path(kev_dir or DEFAULT_KEV_DIR)

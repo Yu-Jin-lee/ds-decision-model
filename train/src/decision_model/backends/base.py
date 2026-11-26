@@ -15,6 +15,11 @@ Prediction = dict[str, Any]
 
 
 class Backend(ABC):
+    # True when ``predictor``'s function only forwards the record to a server the backend started
+    # (kev.serve, chon.serve, vLLM): several threads may call it at once, and that server decides how to
+    # batch them. False for a model run in this process, which the endpoint calls one batch at a time.
+    concurrent_predictor = False
+
     def __init__(self, model_config: dict[str, Any]):
         self.config = model_config
         self.train_config = dict(model_config.get("train") or {})
@@ -59,6 +64,16 @@ class Backend(ABC):
         questions, with the backend's evaluation settings.
         """
         raise NotImplementedError(f"{type(self).__name__} has no predictor")
+        yield  # pragma: no cover
+
+    def has_batch_predictor(self) -> bool:
+        return type(self).batch_predictor is not Backend.batch_predictor
+
+    @contextmanager
+    def batch_predictor(self, checkpoint: Path | None) -> Iterator[Callable[[list[dict[str, Any]]], list[Prediction]]]:
+        """Like ``predictor``, but each call predicts several records at once (the endpoint's micro-batching,
+        decision_model.endpoint). Only for a model run in this process."""
+        raise NotImplementedError(f"{type(self).__name__} has no batch predictor")
         yield  # pragma: no cover
 
 

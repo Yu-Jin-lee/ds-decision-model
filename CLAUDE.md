@@ -37,7 +37,7 @@ Journey Finder의 판단 단계(S2·S4·S5)를 운영 LLM(Gemma) 대신 작은 *
 | `dataset/labels/` | 태스크별 manifest(상태, 원천 위치). 라벨 파일은 첫 작업 회차부터 채움 |
 | `dataset/tools/` | 구축 도구 설계: export → check → apply → validate → build-master. **코드는 아직 없음** |
 | `dataset/reports/` | 데이터 작업 회차별 기록 (방법, 결과, 수정 목록, 팀이 정할 것) |
-| `train/` | 학습·평가 파이프라인: `configs/`, `src/`, `scripts/`, `sagemaker/`, `tests/` ([train/README.md](train/README.md)). **명령은 `train/` 안에서 실행** |
+| `train/` | 학습·평가 파이프라인: `configs/`, `src/`, `scripts/`, `sagemaker/`, `bench/`(엔드포인트 부하 테스트: 학습 작업 방식 `job/`, 실시간 엔드포인트 방식 `endpoint/`), `tests/` ([train/README.md](train/README.md)). **명령은 `train/` 안에서 실행** |
 | `experiments/` | 학습 실험 기록 |
 | `docs/` | 결정 로그([decisions.md](docs/decisions.md)) |
 | `jf_samples/` | 운영 Journey Finder 결과 샘플 (산업군별). `train/scripts/jf_to_master.py`로 마스터로 바꿔 A/B 비교에 씀 |
