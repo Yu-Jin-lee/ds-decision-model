@@ -8,7 +8,7 @@ item is submitted and finished. Results already in --output are skipped by the l
 
 One item = one model and its groups, in one batch job (installs and downloads once):
 
-    python bench/job/queue_jobs.py --items "gemma-4-26b-a4b:P0-s2+P0-s4;kev-4b:B0-s2-choice+B0-s4-both" \
+    python bench/job/queue_jobs.py --items "gemma-4-26b-a4b:P0-s2+P0-s4,kev-4b:B0-s2-choice+B0-s4-both" \
         --data s3://BUCKET/ds-jf-decision-model/data/ --output s3://BUCKET/ds-jf-decision-model/runs/ \
         --role <SageMaker role ARN> --image-uri <training image>
 
@@ -40,9 +40,10 @@ def log(message: str) -> None:
 
 
 def parse_items(value: str) -> list[tuple[str, list[str]]]:
-    """``"m1:G1+G2;m2:G3"`` -> ``[("m1", ["G1", "G2"]), ("m2", ["G3"])]``."""
+    """``"m1:G1+G2,m2:G3"`` -> ``[("m1", ["G1", "G2"]), ("m2", ["G3"])]``. Items are separated by commas, not
+    semicolons: SageMaker passes hyperparameters through a shell, where ``;`` ends the command."""
     items = []
-    for part in filter(None, (p.strip() for p in value.split(";"))):
+    for part in filter(None, (p.strip() for p in value.split(","))):
         model, sep, groups = part.partition(":")
         if not sep or not model or not groups:
             raise ValueError(f"item must be model:GROUP+GROUP, got {part!r}")
@@ -161,7 +162,7 @@ def submit_remote(args: argparse.Namespace) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--items", required=True, help='"model:GROUP+GROUP;model:GROUP", in submit order')
+    parser.add_argument("--items", required=True, help='"model:GROUP+GROUP,model:GROUP", in submit order')
     parser.add_argument("--data", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--role", required=True)
@@ -175,6 +176,8 @@ def main() -> None:
     parser.add_argument("--poll-seconds", type=int, default=60)
     parser.add_argument("--remote", action="store_true", help="run the queue as a CPU SageMaker job instead")
     args = parser.parse_args()
+    if ";" in args.items:
+        parser.error("separate items with commas (a semicolon ends the command in the SageMaker job's shell)")
     parse_items(args.items)   # fail early on a malformed list
     if args.remote:
         submit_remote(args)
