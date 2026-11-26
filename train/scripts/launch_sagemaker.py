@@ -97,9 +97,13 @@ def batch_job_name(model: str, runs, job_kind: str = "batch") -> str:
 
 
 def git_state() -> tuple[str, str]:
-    """Commit and dirty flag of the local checkout, recorded in each run's summary."""
+    """Commit and dirty flag of the local checkout, recorded in each run's summary. Inside a job (no git
+    checkout, e.g. bench/job/queue_jobs.py --remote) the commit the outer launcher recorded is passed on."""
+    import os
     import subprocess
 
+    if os.environ.get("DECISION_MODEL_GIT_COMMIT"):
+        return os.environ["DECISION_MODEL_GIT_COMMIT"], os.environ.get("DECISION_MODEL_GIT_DIRTY", "1")
     try:
         commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=REPO, text=True).strip()
         dirty = subprocess.check_output(["git", "status", "--porcelain", "--", "."], cwd=REPO, text=True).strip()
