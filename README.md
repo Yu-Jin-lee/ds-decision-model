@@ -12,3 +12,10 @@ Journey Finder의 판단 단계(S2·S4·S5)를 운영 LLM 대신 작은 결정�
 
 학습·평가 명령은 `train/` 안에서 실행합니다. 자세한 사용법은 [train/README.md](train/README.md)를 봅니다.
 프로젝트 전체 맥락(태스크, 흐름, 지켜야 할 것)은 [CLAUDE.md](CLAUDE.md)에 있습니다.
+
+## 외부 자료
+
+| 자료 | 링크 |
+|---|---|
+| Drive 프로젝트 폴더 (00 리서치·배경 / 01 데이터 준비 / 02 학습·튜닝 / 03 평가 / 04 배포·관리) | [결정모델 전환](https://drive.google.com/drive/folders/1w7Otw8HgTJp7Cqca0P2WlFGjXeE-POFQ) |
+| 실험 결과 대시보드 | [결정모델 파인튜닝 실험 결과](https://claude.ai/artifact/4UTsxocRnZ9zwaXz3HHNhT) |
