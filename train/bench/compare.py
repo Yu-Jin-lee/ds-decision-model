@@ -67,10 +67,11 @@ def row_of(summary: dict[str, Any]) -> dict[str, Any]:
 
 
 def add_baseline(rows: list[dict[str, Any]], baseline: str) -> None:
-    """Ratios to the baseline result with the same method and tasks (e.g. S-s5-choice against P0-s5)."""
-    bases = {(r["method"], r["tasks"]): r for r in rows if r["model"] == baseline}
+    """Ratios to the baseline result with the same method, label (measurement round) and tasks
+    (e.g. S-s5-choice against P0-s5)."""
+    bases = {(r["method"], r["label"], r["tasks"]): r for r in rows if r["model"] == baseline}
     for row in rows:
-        base = bases.get((row["method"], row["tasks"]))
+        base = bases.get((row["method"], row["label"], row["tasks"]))
         if base is None:
             continue
         row["baseline"] = f"{base['model']} {base['group']}"

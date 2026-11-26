@@ -68,6 +68,8 @@ def launch_command(model: str, groups: list[str], args: argparse.Namespace, spot
                "--max-run-hours", str(args.max_run_hours), "--batch"]
     for group in groups:
         command += ["--group", group]
+    if args.label:
+        command += ["--label", args.label]
     return command + (["--spot"] if spot else [])
 
 
@@ -147,7 +149,8 @@ def submit_remote(args: argparse.Namespace) -> None:
     hyperparameters = {"items": args.items, "data": args.data, "output": args.output, "role": args.role,
                        "image-uri": args.image_uri, "seed": args.seed, "max-run-hours": args.max_run_hours,
                        "region": args.region, "ondemand-slots": args.ondemand_slots, "spot-slots": args.spot_slots,
-                       "max-hours": args.max_hours, "poll-seconds": args.poll_seconds}
+                       "max-hours": args.max_hours, "poll-seconds": args.poll_seconds,
+                       **({"label": args.label} if args.label else {})}
     estimator = Estimator(
         image_uri=CONTROLLER_IMAGE.format(region=args.region), role=args.role, instance_type="ml.m5.large",
         instance_count=1, volume_size=30, entry_point="bench/job/queue_jobs.py", source_dir=str(REPO),
@@ -176,6 +179,7 @@ def main() -> None:
     parser.add_argument("--spot-slots", type=int, default=1, help="spot quota of the serving instance")
     parser.add_argument("--max-hours", type=float, default=10, help="give up submitting after this long")
     parser.add_argument("--poll-seconds", type=int, default=60)
+    parser.add_argument("--label", default=None, help="measurement round, e.g. r2 (bench/job/launch.py --label)")
     parser.add_argument("--remote", action="store_true", help="run the queue as a CPU SageMaker job instead")
     args = parser.parse_args()
     if ";" in args.items:

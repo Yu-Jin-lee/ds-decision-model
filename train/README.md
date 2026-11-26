@@ -192,7 +192,7 @@ serving 배치는 학습한 실행이 끝날 때마다 받은 체크포인트와
 | 조건 | 내용 |
 |---|---|
 | 엔드포인트 | 레코드 1건 → 예측 (`bench/serve_endpoint.py`). 예측은 각 모델의 `predictor`(평가·latency와 같은 함수) |
-| 동시 요청 처리 | Kev·Chon·Gemma: 각자의 서버(kev.serve, chon.serve, vLLM)에 그대로 넘김. Laya: 엔드포인트가 대기 중인 요청을 최대 16건씩 묶어 한 번에 계산(`serving.endpoint`) |
+| 동시 요청 처리 | 모든 모델이 동시 요청을 최대 64건(부하 테스트의 최대 동시성)까지 묶어 계산할 수 있음. Kev: kev.serve가 직접 묶음(MAX_BATCH 64). Chon: chon.serve의 한 건씩 잠금을 풀고 요청별 필드를 스레드별로 둬서(`backends/chon_serve.py`) vLLM 리더가 묶음. Gemma: vLLM. Laya: 엔드포인트가 대기 중인 요청을 최대 64건씩 묶음(`serving.endpoint`) |
 | 부하 | 닫힌 루프: 사용자마다 답을 받으면 바로 다음 레코드를 보냄. 사용자 수 1, 2, 4, 8, 16, 32, 64 단계 |
 | 레코드 | train·calibration·development에서 id 해시 순서로, 단계마다 다른 레코드를 보냄(vLLM이 같은 프롬프트를 캐시에서 답하지 않게). **test는 쓰지 않음**. 라벨은 보내지 않음 |
 | 단위 | 레코드 1건(질문 전부)을 보내고 답을 받을 때까지, 클라이언트 시계 |
@@ -210,7 +210,7 @@ pip install -r requirements-bench.txt
 python bench/job/run.py --model laya-multilingual --group S-s5-choice --seed 0 --checkpoint <체크포인트>
 ```
 
-옵션은 `scripts/launch_sagemaker.py`와 같습니다(`--serving` 제외). 결과는 `{output}/bench/job/{run_id}/`에 올라가고, 이미 있는 결과는 건너뜁니다.
+옵션은 `scripts/launch_sagemaker.py`와 같습니다(`--serving` 제외). 결과는 `{output}/bench/job/{run_id}/`에 올라가고, 이미 있는 결과는 건너뜁니다. `--label r2`처럼 측정 회차를 주면 `{run_id}/r2/`에 따로 저장하고, `bench/compare.py`는 같은 회차끼리만 Gemma와 비교합니다. 여러 모델을 자리가 나는 대로 차례로 제출하려면 `bench/job/queue_jobs.py`(`--remote`면 작은 CPU SageMaker 작업으로 돌아 노트북을 꺼도 됨)를 씁니다.
 
 **방식 B: 실시간 엔드포인트** (x86 Linux 장비에서 실행. 서울 리전 EC2 권장)
 
@@ -247,7 +247,7 @@ locust -f bench/locustfile.py --host http://127.0.0.1:8080 --records runs/kev-4b
 |---|---|
 | `summary.json` | 방식, 조건, 엔드포인트 정보(정밀도, 처리 방식, GPU), 단계별 지표, `best`(최대 처리량 단계, p95 목표 안 최대 처리량, 1명일 때 지연). 방식 B는 `deployment`(엔드포인트 이름, 이미지, 배포 시간, 삭제 여부)도 남김 |
 | `steps.csv` | 단계마다 한 줄: users, records/s, questions/s, p50·p90·p95·p99, 실패 수, 평균 묶음 크기, 클라이언트 CPU |
-| `requests.jsonl.gz` | 요청마다 한 줄: 시작·끝 시각, 지연, 서버 처리 시간, 묶음 크기, 성공 여부 |
+| `requests.jsonl.gz` | 요청마다 한 줄: 시작·끝 시각, 지연, 서버 처리 시간, 묶음 크기, 성공 여부, 질문별 가장 높은 선택지(`top`: 묶어 처리해도 답이 같은지 확인용) |
 | `_compare/` (`bench/compare.py`) | `comparison.md`·`comparison.csv`(방식·모델별 요약, 방식과 태스크가 같은 Gemma 대비 배수), `steps_all.csv`(전체 단계, 그래프용), PNG 그래프 3개 |
 
 - 비교 기준은 **최대 처리량**(records/s)과 **p95 목표 안 처리량**입니다. p95 목표(`slo_p95_ms`)는 임시값 1000 ms이고, 서비스 목표가 정해지면 바꿉니다.

@@ -112,11 +112,11 @@ def git_state() -> tuple[str, str]:
     return commit, "1" if dirty else "0"
 
 
-def output_id(run_id: str, serving: bool, bench: bool = False) -> str:
+def output_id(run_id: str, serving: bool, bench: bool = False, label: str | None = None) -> str:
     """Where a run's results go under --output: the run itself, its serving re-timing (pipeline.SERVING_DIR),
-    or its load test in a job (bench.BENCH_DIR, method job)."""
+    or its load test in a job (bench.BENCH_DIR, method job; a ``label`` such as a measurement round one folder deeper)."""
     if bench:
-        return f"bench/job/{run_id}"
+        return f"bench/job/{run_id}" + (f"/{label}" if label else "")
     return f"serving/{run_id}" if serving else run_id
 
 
@@ -167,10 +167,16 @@ def main(argv: list[str] | None = None, bench: bool = False, description: str | 
             "--serving", action="store_true",
             help="re-time finished runs with the serving profile (configs/serving.yaml) into serving/{run_id}/",
         )
+    else:
+        parser.add_argument("--label", default=None,
+                            help="measurement round, e.g. r2: results go to bench/job/{run_id}/{label}/")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args(argv)
     args.bench = bench
     args.serving = getattr(args, "serving", False)
+    args.label = getattr(args, "label", None)
+    if args.label and not re.fullmatch(r"[A-Za-z0-9_-]{1,32}", args.label):
+        sys.exit("--label: letters, digits, _ and - only (at most 32)")
     serving_like = args.serving or args.bench   # both serve with the serving profile on its one instance
 
     model_config = load_model_config(args.model)
@@ -220,7 +226,7 @@ def main(argv: list[str] | None = None, bench: bool = False, description: str | 
         if args.serving:
             hyperparameters = {**hyperparameters, "serving": "1"}
         if args.bench:
-            hyperparameters = {**hyperparameters, "bench": "1"}
+            hyperparameters = {**hyperparameters, "bench": "1", **({"bench-label": args.label} if args.label else {})}
         max_run = args.max_run_hours * 3600
         estimator = Estimator(
             image_uri=args.image_uri,
@@ -250,8 +256,8 @@ def main(argv: list[str] | None = None, bench: bool = False, description: str | 
 
     pending = []
     for run in runs:
-        if not args.dry_run and already_done(args.output, output_id(run.run_id, args.serving, args.bench)):
-            print(f"skip   {output_id(run.run_id, args.serving, args.bench)} (summary.json exists)")
+        if not args.dry_run and already_done(args.output, output_id(run.run_id, args.serving, args.bench, args.label)):
+            print(f"skip   {output_id(run.run_id, args.serving, args.bench, args.label)} (summary.json exists)")
             continue
         if serving_like and run.train and not args.dry_run and not already_done(args.output, run.run_id):
             print(f"skip   {run.run_id} (not finished yet: a serving run needs its checkpoint)")

@@ -41,6 +41,10 @@ def main() -> None:
     args, serving = take_serving_flag(sys.argv[1:])
     args, bench = take_flag(args, "--bench")
     args, install_only = take_flag(args, "--install-only")
+    label = None
+    if "--bench-label" in args:   # a load-test round (bench/job/launch.py --label): one folder deeper
+        label = args[args.index("--bench-label") + 1]
+        args = _drop(args, "--bench-label")
     serving = serving or bench   # a load test serves the model with its serving profile
     model = args[args.index("--model") + 1]
     from decision_model.config import load_model_config
@@ -59,12 +63,12 @@ def main() -> None:
         args = _drop(args, "--resume-from")
     if "--runs" in args:
         run_batch(model, parse_runs(args[args.index("--runs") + 1]), _without(args, "--runs"), resume_root, serving,
-                  bench)
+                  bench, label)
         return
     group, seed = args[args.index("--group") + 1], args[args.index("--seed") + 1] if "--seed" in args else "0"
     if bench:
         sh(sys.executable, str(REPO / "bench" / "job" / "run.py"), "--model", model, "--group", group,
-           "--seed", seed, *serving_checkpoint_args(model, group, int(seed)))
+           "--seed", seed, *(["--label", label] if label else []), *serving_checkpoint_args(model, group, int(seed)))
         upload_outputs()
         return
     if serving:
@@ -271,7 +275,7 @@ def _without(args: list[str], *flags: str) -> list[str]:
 
 
 def run_batch(model: str, runs: list[tuple[str, int]], extra: list[str], resume_root: Path | None = None,
-              serving: bool = False, bench: bool = False) -> None:
+              serving: bool = False, bench: bool = False, label: str | None = None) -> None:
     import shutil
 
     model_dir = Path(os.environ.get("SM_MODEL_DIR", "runs"))
@@ -289,7 +293,7 @@ def run_batch(model: str, runs: list[tuple[str, int]], extra: list[str], resume_
             if bench:
                 more = serving_checkpoint_args(model, group, seed)
                 sh(sys.executable, str(REPO / "bench" / "job" / "run.py"), "--model", model, "--group", group,
-                   "--seed", str(seed), *more)
+                   "--seed", str(seed), *(["--label", label] if label else []), *more)
             else:
                 more = (["--serving", *serving_checkpoint_args(model, group, seed)] if serving
                         else resume_args(resume_root, run_id))

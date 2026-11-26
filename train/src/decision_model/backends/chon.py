@@ -229,6 +229,9 @@ class ChonBackend(Backend):
         env.pop("CHON_DEADLINE_S", None)
         if self.serving:
             env["CHON_VLLM_STRICT"] = "1"
+            # decision_model.backends.chon_serve (serve_command) runs in the child: put this package on its path
+            src = str(Path(__file__).resolve().parents[2])
+            env["PYTHONPATH"] = os.pathsep.join(filter(None, [src, env.get("PYTHONPATH")]))
             env.setdefault("CHON_MERGED_DIR", "/opt/ml/models/chon-merged")   # on the job's data volume
             if vllm_bin is not None:
                 env["CHON_VLLM_BIN"] = str(vllm_bin)
@@ -237,7 +240,10 @@ class ChonBackend(Backend):
     def serve_command(self, port: int, checkpoint: Path | None = None) -> list[str]:
         args = self.serve_args()
         model = str(checkpoint) if checkpoint is not None else self.config["checkpoint"]
-        return [sys.executable, "-m", "chon.serve", "--model", model,
+        # Serving profile: chon.serve without its one-request-at-a-time lock, so its vLLM reader batches concurrent
+        # requests like every other model's server (decision_model.backends.chon_serve). One request runs as before.
+        module = "decision_model.backends.chon_serve" if self.serving else "chon.serve"
+        return [sys.executable, "-m", module, "--model", model,
                 "--dtype", str(self.config.get("dtype", "bfloat16")), "--port", str(port), *args]
 
     @contextmanager

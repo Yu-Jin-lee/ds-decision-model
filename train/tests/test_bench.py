@@ -2,6 +2,7 @@
 the answers become latency and throughput."""
 
 import importlib.util
+import os
 import json
 import subprocess
 import sys
@@ -396,3 +397,109 @@ def test_image_build_only_installs(monkeypatch):
     assert installs == [("gemma-4-26b-a4b", True)] and weights == []   # weights are fetched when the container starts
     dockerfile = (REPO / "bench" / "endpoint" / "Dockerfile").read_text()
     assert "--install-only" in dockerfile and "bench/endpoint/serve.py" in dockerfile
+
+
+# -- equal batching for every model ----------------------------------------------------------------------------------
+
+def _fake_chon(monkeypatch):
+    """Stand-ins for chon.infer and chon.serve with the parts chon_serve patches."""
+    import threading as real_threading
+    import types
+
+    infer = types.ModuleType("chon.infer")
+
+    class DecisionModel:
+        def __init__(self):
+            self._req_layout = None
+            self._req_asked = None
+            self._deadline = None
+            self._shared = None
+
+        def predict(self, layout, gate=None, seen=None):
+            self._req_layout = layout          # set at the start of a request ...
+            if gate:
+                gate.wait(5)                   # ... another request finishes meanwhile ...
+            seen.append(self._req_layout)      # ... and this one must still see its own layout
+            self._req_layout = None
+
+    infer.DecisionModel = DecisionModel
+    serve = types.ModuleType("chon.serve")
+    serve.threading = real_threading
+    serve.create_app = lambda *a, **k: types.SimpleNamespace(on_event=lambda name: (lambda fn: fn))
+    serve.main = lambda argv=None: None
+    chon = types.ModuleType("chon")
+    chon.infer, chon.serve = infer, serve
+    for name, module in (("chon", chon), ("chon.infer", infer), ("chon.serve", serve)):
+        monkeypatch.setitem(sys.modules, name, module)
+    return infer, serve
+
+
+def test_chon_serves_concurrent_requests_without_mixing_their_prompt_layout(monkeypatch):
+    from decision_model.backends import chon_serve
+
+    infer, serve = _fake_chon(monkeypatch)
+    chon_serve.patch()
+    model, seen, gate = infer.DecisionModel(), [], threading.Event()
+    slow = threading.Thread(target=model.predict, args=("header",), kwargs={"gate": gate, "seen": seen})
+    slow.start()
+    model.predict("state_first", seen=seen)    # finishes while "header" is in flight and clears its own field
+    gate.set()
+    slow.join(5)
+    assert seen == ["state_first", "header"]
+    with serve.threading.Lock():               # the one-request lock is gone
+        pass
+    assert serve.threading.Lock is chon_serve._NoLock
+
+
+def test_serving_chon_starts_the_concurrent_server_and_evaluation_keeps_chon_serve():
+    from decision_model.backends import get_backend
+
+    config = load_model_config("chon-1.0-e4b")
+    assert "decision_model.backends.chon_serve" in get_backend(config, serving=True).serve_command(8000)
+    assert "chon.serve" in get_backend(config).serve_command(8000)
+    env = get_backend(config, serving=True).serve_env()
+    assert str(REPO / "src") in env["PYTHONPATH"].split(os.pathsep)
+
+
+def test_every_decision_model_can_batch_every_concurrent_request():
+    from decision_model.bench import load_bench_config
+
+    most = max(load_bench_config(CONFIG_DIR)["users"])
+    assert load_model_config("laya-multilingual")["serving"]["endpoint"]["max_batch"] >= most
+
+
+def test_answers_carry_each_questions_top_option():
+    # In its own process: importing Locust patches the standard library for gevent.
+    pytest.importorskip("locust")
+    code = ("import json, sys; sys.path.insert(0, 'src'); from decision_model.load_test import _check_answer; row = {}; "
+            "body = json.dumps({'prediction': {'id': 'r1', 'answers': {'q': {'a': -2.0, 'b': -0.1}}}}).encode(); "
+            "assert _check_answer(row, {'id': 'r1'}, 200, body) and row['top'] == {'q': 'b'}, row")
+    subprocess.run([sys.executable, "-c", code], cwd=REPO, check=True)
+
+
+# -- measurement rounds ----------------------------------------------------------------------------------------------
+
+def test_a_round_label_goes_one_folder_deeper_everywhere(monkeypatch, tmp_path, capsys):
+    assert launch.output_id("kev-4b/B0-s5-choice/s0", False, True, "r2") == "bench/job/kev-4b/B0-s5-choice/s0/r2"
+    launch.main(["--model", "kev-4b", "--group", "B0-s5-choice", "--seed", "0", "--data", "d", "--output", "o",
+                 "--role", "r", "--image-uri", "i", "--label", "r2", "--dry-run"], bench=True)
+    assert "kev-4b-bench" in capsys.readouterr().out
+    with pytest.raises(SystemExit):
+        launch.main(["--model", "kev-4b", "--data", "d", "--output", "o", "--role", "r", "--image-uri", "i",
+                     "--label", "bad/label", "--dry-run"], bench=True)
+    monkeypatch.setenv("SM_MODEL_DIR", str(tmp_path))
+    calls = []
+    monkeypatch.setattr(entry, "sh", lambda *command, **_: calls.append(command))
+    monkeypatch.setattr(entry, "upload_outputs", lambda run_id=None: None)
+    monkeypatch.setattr(entry, "serving_checkpoint_args", lambda *a: [])
+    entry.run_batch("kev-4b", [("B0-s5-choice", 0)], [], None, serving=True, bench=True, label="r2")
+    assert calls[0][calls[0].index("--label") + 1] == "r2"
+
+
+def test_ratios_compare_within_one_round():
+    rows = [compare.row_of(s) for s in (
+        {**_summary("gemma-4-26b-a4b", "P0-s5", ["s5"], [_step(1, 2.0, 500, 600)]), "label": None},
+        {**_summary("gemma-4-26b-a4b", "P0-s5", ["s5"], [_step(1, 4.0, 500, 600)]), "label": "r2"},
+        {**_summary("kev-4b", "B0-s5-choice", ["s5"], [_step(1, 8.0, 50, 60)]), "label": "r2"})]
+    compare.add_baseline(rows, "gemma-4-26b-a4b")
+    assert rows[2]["throughput_x_baseline"] == 2.0

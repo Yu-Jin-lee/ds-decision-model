@@ -58,7 +58,14 @@ def _check_answer(row: dict[str, Any], record: dict[str, Any], status: int, cont
     try:
         answer = json.loads(content)
         row.update(server_ms=answer.get("server_ms"), batch=answer.get("batch"))
-        return isinstance(answer.get("prediction"), dict) and answer["prediction"].get("id") == record["id"]
+        prediction = answer.get("prediction")
+        if not (isinstance(prediction, dict) and prediction.get("id") == record["id"]):
+            return False
+        # Each question's most likely option: lets a run be checked against one-request-at-a-time answers
+        # (a server that batches must answer the same).
+        row["top"] = {qid: max(options, key=options.get) for qid, options in (prediction.get("answers") or {}).items()
+                      if isinstance(options, dict) and options}
+        return True
     except (ValueError, TypeError, AttributeError):
         return False
 

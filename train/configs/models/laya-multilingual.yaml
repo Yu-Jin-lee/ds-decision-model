@@ -27,6 +27,7 @@ instance: ml.g6e.xlarge
 serving:
   autocast: bf16
   # Endpoint (bench/serve_endpoint.py, configs/bench.yaml): Laya runs in the endpoint's own process, so the
-  # endpoint batches the requests waiting in its queue, up to max_batch records per forward pass (vLLM batches
-  # Chon and Gemma the same way inside its server). max_wait_ms 0: never wait for more requests to arrive.
-  endpoint: {max_batch: 16, max_wait_ms: 0}
+  # endpoint batches the requests waiting in its queue, up to max_batch records per forward pass. 64, the most
+  # concurrent requests the load test sends: every model may batch all of them (kev.serve MAX_BATCH 64; vLLM for
+  # Chon and Gemma). max_wait_ms 0: never wait for more requests to arrive.
+  endpoint: {max_batch: 64, max_wait_ms: 0}
